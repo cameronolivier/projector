@@ -1,5 +1,5 @@
 {
-  "name": "projects-cli",
+  "name": "manage-projects-cli",
   "version": "0.1.0",
   "description": "A CLI tool to scan, track, and manage development projects across your /dev directory",
   "main": "dist/index.js",

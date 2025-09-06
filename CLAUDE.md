@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-The **projects CLI** is a TypeScript/Node.js tool that scans directories for development projects and displays them in a beautiful table with status tracking. It uses oclif framework and scans `/dev` directories to discover projects, detect their types (Node.js, Python, Rust, etc.), and analyze completion status through tracking files like CLAUDE.md, epics.md, etc.
+The **manage-projects-cli** is a TypeScript/Node.js tool that scans directories for development projects and displays them in a beautiful table with status tracking. It uses oclif framework and scans `/dev` directories to discover projects, detect their types (Node.js, Python, Rust, etc.), and analyze completion status through tracking files like CLAUDE.md, epics.md, etc. The package is named `manage-projects-cli` but provides the `projects` command.
 
 ## Architecture
 

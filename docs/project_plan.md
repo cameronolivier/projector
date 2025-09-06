@@ -1,7 +1,7 @@
 # Project Development Plan
 
 ## Overview
-The **projects CLI** tool development follows a structured 4-phase approach designed to deliver immediate value while allowing for future extensibility.
+The **manage-projects-cli** tool development follows a structured 4-phase approach designed to deliver immediate value while allowing for future extensibility. The package is named `manage-projects-cli` but provides the `projects` command.
 
 ## Development Phases
 
@@ -93,7 +93,7 @@ The **projects CLI** tool development follows a structured 4-phase approach desi
 
 ## Current Project Status: Phase 3 COMPLETE ✅
 
-**The projects CLI has exceeded initial expectations and completed all core functionality through Phase 3:**
+**The manage-projects-cli has exceeded initial expectations and completed all core functionality through Phase 3:**
 
 ### What Works Right Now
 1. **Full Project Discovery**: Recursively scans directories with intelligent ignore patterns
