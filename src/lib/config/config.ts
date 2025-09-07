@@ -48,7 +48,7 @@ export class ConfigurationManager {
   getDefaultConfig(): ProjectsConfig {
     return {
       scanDirectory: '/Users/cam/nona-mac/dev',
-      maxDepth: 2,
+      maxDepth: 10,
       trackingPatterns: this.getDefaultTrackingPatterns(),
       descriptions: {
         'bb': 'Bitbucket CLI with GitHub parity',
@@ -78,6 +78,26 @@ export class ConfigurationManager {
         '.nyc_output',
         '.cache',
       ],
+      codeFileExtensions: [
+        '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',  // TypeScript/JavaScript
+        '.py', '.pyx', '.pyi',                         // Python
+        '.php', '.phtml',                              // PHP
+        '.go',                                         // Go
+        '.rs',                                         // Rust
+        '.java', '.kt', '.kts',                        // Java/Kotlin
+        '.c', '.cpp', '.cc', '.cxx', '.h', '.hpp',     // C/C++
+        '.cs',                                         // C#
+        '.rb',                                         // Ruby
+        '.swift',                                      // Swift
+        '.dart',                                       // Dart
+        '.vue',                                        // Vue
+        '.svelte',                                     // Svelte
+        '.html', '.htm',                               // HTML
+        '.css', '.scss', '.sass', '.less',             // CSS
+        '.sh', '.bash', '.zsh', '.fish',               // Shell scripts
+        '.ps1', '.psm1',                               // PowerShell
+        '.bat', '.cmd',                                // Windows batch
+      ],
       colorScheme: {
         header: '#00d4ff',      // Bright cyan
         phaseStatus: '#ff6b35',  // Orange
@@ -97,6 +117,7 @@ export class ConfigurationManager {
       trackingPatterns: userConfig.trackingPatterns || defaults.trackingPatterns,
       descriptions: { ...defaults.descriptions, ...userConfig.descriptions },
       ignorePatterns: userConfig.ignorePatterns || defaults.ignorePatterns,
+      codeFileExtensions: userConfig.codeFileExtensions || defaults.codeFileExtensions,
       colorScheme: { ...defaults.colorScheme, ...userConfig.colorScheme },
     }
   }

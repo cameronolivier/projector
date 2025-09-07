@@ -7,32 +7,55 @@ import { ConfigurationManager } from '../lib/config/config.js'
 import { CacheManager } from '../lib/cache/manager.js'
 
 export default class List extends Command {
-  static override description = 'List all development projects with their status and descriptions'
+  static override description = 'Discover and analyze development projects with intelligent scanning and status tracking'
 
   static override examples = [
-    '<%= config.bin %> list',
-    '<%= config.bin %> list --depth 3',
-    '<%= config.bin %> list --directory ~/code',
+    {
+      description: 'Scan default directory with default settings',
+      command: '<%= config.bin %>',
+    },
+    {
+      description: 'Scan with increased depth for nested projects',
+      command: '<%= config.bin %> --depth 5',
+    },
+    {
+      description: 'Scan a specific directory',
+      command: '<%= config.bin %> --directory ~/my-projects',
+    },
+    {
+      description: 'Force fresh analysis without using cache',
+      command: '<%= config.bin %> --no-cache',
+    },
+    {
+      description: 'Clear cache and rescan with verbose output',
+      command: '<%= config.bin %> --clear-cache --verbose',
+    },
+    {
+      description: 'Scan deeply nested monorepo structures',
+      command: '<%= config.bin %> --directory ~/work --depth 8 --verbose',
+    },
   ]
 
   static override flags = {
     directory: Flags.string({
       char: 'd',
-      description: 'Directory to scan for projects',
+      description: 'Directory to recursively scan for development projects. Defaults to configured scan directory (~/dev)',
+      helpValue: '~/my-projects',
     }),
     depth: Flags.integer({
-      description: 'Maximum depth to scan',
+      description: 'Maximum directory depth for recursive scanning. Higher values find more nested projects but take longer. Default: 10',
+      helpValue: '5',
     }),
     verbose: Flags.boolean({
       char: 'v',
-      description: 'Verbose output with additional details',
+      description: 'Show detailed progress information, cache statistics, and analysis details during scanning',
     }),
     'no-cache': Flags.boolean({
-      description: 'Skip cache and force fresh analysis of all projects',
+      description: 'Skip reading from cache and force fresh analysis of all projects. Useful when project files have changed',
       default: false,
     }),
     'clear-cache': Flags.boolean({
-      description: 'Clear all cached data before scanning',
+      description: 'Delete all cached analysis data before scanning. Combines with fresh analysis for complete rebuild',
       default: false,
     }),
   }
@@ -58,7 +81,7 @@ export default class List extends Command {
       this.log(`🔍 Scanning projects in ${scanDirectory}...`)
       
       // Initialize components
-      const scanner = new ProjectScanner()
+      const scanner = new ProjectScanner(config)
       const detector = new TypeDetector()
       const analyzer = new TrackingAnalyzer(config.trackingPatterns)
       const tableGenerator = new TableGenerator()

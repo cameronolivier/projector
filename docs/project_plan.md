@@ -73,7 +73,32 @@ The **manage-projects-cli** tool development follows a structured 4-phase approa
 - Color-coded project types and status indicators
 - Summary statistics in output
 
-### Phase 4: Future Extensions 🔮 PLANNED
+### Phase 4: Enhanced Project Discovery ✅ COMPLETE
+**Objective**: Implement enhanced recursive project discovery with improved root detection logic
+
+#### Deliverables
+- [x] Enhanced project root detection with code file extensions as strong indicators
+- [x] Node.js projects detected by node_modules directory presence
+- [x] Configurable code file extensions for user customization
+- [x] Increased default depth limit from 2 to 10 for true recursive behavior
+- [x] Removed weak indicator logic and depth-based limitations for code files
+- [x] Updated configuration system to support codeFileExtensions array
+
+#### Success Criteria ✅ ALL MET
+- [x] Discovers projects at any reasonable depth without manual depth configuration
+- [x] Correctly identifies project roots by code files (.ts, .py, .php, etc.)
+- [x] Treats directories with node_modules as project roots
+- [x] Maintains excellent performance even with deep directory structures
+- [x] Preserves existing functionality for manifest-file-based detection
+
+#### Implemented Features
+- **Enhanced Code File Detection**: Added comprehensive list of code file extensions (.ts, .js, .py, .php, .go, .rs, .java, .c, .cpp, .cs, .rb, .swift, .dart, .vue, .svelte, .html, .css, .sh, .ps1, .bat, etc.)
+- **Node.js Root Detection**: Directories containing node_modules folder are automatically identified as project roots
+- **Configurable Extensions**: Users can customize code file extensions via `~/.config/projects/config.yaml`
+- **Deep Recursive Scanning**: Default depth increased to 10 levels for comprehensive project discovery
+- **Simplified Logic**: Removed complex weak indicator logic in favor of clear, strong indicators
+
+#### Future Extensions 🔮 PLANNED
 **Objective**: Add advanced features for power users
 
 #### Planned Features
@@ -91,28 +116,34 @@ The **manage-projects-cli** tool development follows a structured 4-phase approa
 - Test coverage analysis
 - Build status monitoring
 
-## Current Project Status: Phase 3 COMPLETE ✅
+## Current Project Status: Phase 4 COMPLETE ✅
 
-**The manage-projects-cli has exceeded initial expectations and completed all core functionality through Phase 3:**
+**The manage-projects-cli has exceeded initial expectations and completed all core functionality through Phase 4:**
 
 ### What Works Right Now
-1. **Full Project Discovery**: Recursively scans directories with intelligent ignore patterns
-2. **Comprehensive Type Detection**: Supports Node.js, Python, Rust, Go, PHP, Java projects
-3. **Advanced Status Analysis**: Phase tracking, version analysis, TODO counting
-4. **Beautiful Output**: Color-coded table with status icons and project type indicators
-5. **Performance Optimized**: Intelligent caching with 24-hour invalidation
-6. **Rich Configuration**: YAML config with XDG compliance and custom patterns
-7. **Cache Management**: Full cache statistics and management commands
-8. **Robust Error Handling**: Graceful degradation for permissions and file system issues
+1. **Enhanced Project Discovery**: Recursively scans directories with enhanced root detection
+2. **Code File Detection**: Automatically detects projects by code file extensions (.ts, .js, .py, .php, etc.)
+3. **Node.js Root Detection**: Identifies project roots by node_modules directory presence
+4. **Deep Recursive Scanning**: Scans up to 10 levels deep by default for comprehensive discovery
+5. **Comprehensive Type Detection**: Supports Node.js, Python, Rust, Go, PHP, Java projects
+6. **Advanced Status Analysis**: Phase tracking, version analysis, TODO counting
+7. **Beautiful Output**: Color-coded table with status icons and project type indicators
+8. **Performance Optimized**: Intelligent caching with 24-hour invalidation
+9. **Rich Configuration**: YAML config with customizable code file extensions and patterns
+10. **Cache Management**: Full cache statistics and management commands
+11. **Robust Error Handling**: Graceful degradation for permissions and file system issues
 
 ### Beyond Original Plan
-The implementation significantly exceeds the original Phase 1-3 scope:
+The implementation significantly exceeds the original Phase 1-4 scope:
 - **Caching System**: Not planned until later but fully implemented
 - **Advanced Parsing**: Phase information extraction from tracking files  
 - **Version Analysis**: Automatic version detection across project types
 - **Confidence Scoring**: Status reliability indicators
 - **Progress Indicators**: Real-time progress for large directories
 - **Cache Statistics**: Detailed performance metrics and hit rates
+- **Enhanced Discovery**: Deep recursive scanning with code file detection
+- **Configurable Extensions**: User-customizable code file extension lists
+- **Smart Root Detection**: Multiple strategies for identifying project roots
 
 ## Technical Implementation Strategy
 

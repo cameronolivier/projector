@@ -76,6 +76,7 @@ export interface ProjectsConfig {
   trackingPatterns: TrackingPattern[]
   descriptions: Record<string, string>
   ignorePatterns: string[]
+  codeFileExtensions: string[]
   colorScheme: ColorScheme
 }
 

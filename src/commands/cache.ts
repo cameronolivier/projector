@@ -4,35 +4,56 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 
 export default class Cache extends Command {
-  static override description = 'Manage project analysis cache'
+  static override description = 'Manage project analysis cache for improved performance'
 
   static override examples = [
-    '<%= config.bin %> cache --stats',
-    '<%= config.bin %> cache --clear',
-    '<%= config.bin %> cache --prune',
-    '<%= config.bin %> cache --location',
+    {
+      description: 'Show cache statistics and performance metrics',
+      command: '<%= config.bin %> cache --stats',
+    },
+    {
+      description: 'View cache directory location on disk',
+      command: '<%= config.bin %> cache --location',
+    },
+    {
+      description: 'Clear all cached project analysis data',
+      command: '<%= config.bin %> cache --clear',
+    },
+    {
+      description: 'Remove cache entries older than 7 days',
+      command: '<%= config.bin %> cache --prune',
+    },
+    {
+      description: 'Remove cache entries older than 24 hours',
+      command: '<%= config.bin %> cache --prune --max-age 24',
+    },
+    {
+      description: 'Show all cache information (default when no flags)',
+      command: '<%= config.bin %> cache',
+    },
   ]
 
   static override flags = {
     stats: Flags.boolean({
       char: 's',
-      description: 'Show cache statistics and location',
+      description: 'Display detailed cache statistics including size, hit rates, and session metrics',
     }),
     clear: Flags.boolean({
       char: 'c', 
-      description: 'Clear all cached data',
+      description: 'Delete all cached project analysis data. Use when projects have significantly changed',
     }),
     prune: Flags.boolean({
       char: 'p',
-      description: 'Remove old cache entries (older than 7 days)',
+      description: 'Remove outdated cache entries based on age. Helps maintain cache performance',
     }),
     location: Flags.boolean({
       char: 'l',
-      description: 'Show cache directory location',
+      description: 'Show the full path to the cache directory on disk',
     }),
     'max-age': Flags.integer({
-      description: 'Maximum age in hours for prune operation',
+      description: 'Maximum age in hours for cache entries during prune operation. Default: 168 hours (7 days)',
       default: 24 * 7, // 7 days
+      helpValue: '24',
     }),
   }
 

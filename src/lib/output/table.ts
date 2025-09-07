@@ -63,7 +63,16 @@ export class TableGenerator {
   }
 
   private formatProjectType(type: string, languages: string[]): string {
-    const primaryLanguage = languages[0] || 'Unknown'
+    // Map project types to display names
+    const typeDisplayNames: Record<string, string> = {
+      'nodejs': 'Node.js',
+      'python': 'Python',
+      'rust': 'Rust',
+      'go': 'Go',
+      'php': 'PHP',
+      'java': 'Java',
+      'unknown': 'Unknown',
+    }
     
     // Color code by project type
     const typeColors: Record<string, string> = {
@@ -76,8 +85,9 @@ export class TableGenerator {
       'unknown': '#666666',     // Gray
     }
 
+    const displayName = typeDisplayNames[type] || typeDisplayNames['unknown']
     const color = typeColors[type] || typeColors['unknown']
-    return chalk.hex(color)(primaryLanguage)
+    return chalk.hex(color)(displayName)
   }
 
   private formatDescription(description: string, confidence: number): string {

@@ -25,7 +25,7 @@ The main data flow: Scanner finds directories → Detector identifies project ty
 
 ```bash
 # Prerequisites
-nvm use                   # Use Node LTS from .nvmrc (lts/jod)
+nvm use                   # Use Node LTS from .nvmrc (currently lts/jod - Node 20+)
 pnpm install             # Install dependencies (requires pnpm v10+)
 
 # Development
@@ -111,7 +111,11 @@ projects cache:status             # Show cache statistics
 
 ### Running Tests
 ```bash
-# Run single test file
+# Note: Test directory currently empty, Jest configured in package.json
+pnpm test                # Run full test suite
+pnpm test:watch          # Run tests in watch mode
+
+# Run single test file (when tests exist)
 pnpm test -- scanner.test.ts
 
 # Run tests matching pattern  
@@ -146,3 +150,8 @@ All core types are in `src/lib/types.ts`. When adding new project types or track
 - Large directories (>50 projects) show progress indicators
 - Use `--verbose` flag to see cache hit rates and performance metrics
 - Cache is stored in OS-appropriate cache directory
+
+## Additional Documentation
+- `docs/architecture.md` - Detailed system architecture
+- `docs/PERFORMANCE.md` - Performance analysis and optimization
+- `docs/project_plan.md` - Project roadmap and implementation details

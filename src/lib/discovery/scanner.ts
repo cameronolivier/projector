@@ -1,8 +1,13 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
-import { ProjectDirectory, ScanOptions, ProjectType } from '../types.js'
+import { ProjectDirectory, ScanOptions, ProjectType, ProjectsConfig } from '../types.js'
 
 export class ProjectScanner {
+  private config?: ProjectsConfig
+
+  constructor(config?: ProjectsConfig) {
+    this.config = config
+  }
   async scanDirectory(basePath: string, options: ScanOptions): Promise<ProjectDirectory[]> {
     try {
       const projects: ProjectDirectory[] = []
@@ -101,7 +106,14 @@ export class ProjectScanner {
 
   async isProjectDirectory(dirPath: string): Promise<boolean> {
     try {
-      const files = await fs.readdir(dirPath)
+      const files = await fs.readdir(dirPath, { withFileTypes: true })
+      const fileNames = files.map(f => f.name)
+      
+      // Check if node_modules directory exists - strong indicator of project root
+      const hasNodeModules = files.some(f => f.isDirectory() && f.name === 'node_modules')
+      if (hasNodeModules) {
+        return true
+      }
       
       // Strong project indicators (manifest files) - these are definitive project roots
       const strongIndicators = [
@@ -120,24 +132,39 @@ export class ProjectScanner {
       ]
       
       // If we find a strong indicator, this is definitely a project root
-      if (strongIndicators.some(indicator => files.includes(indicator))) {
+      if (strongIndicators.some(indicator => fileNames.includes(indicator))) {
         return true
       }
       
-      // Weak indicators - only consider these if no strong indicators found
-      // and we're not too deep in the directory structure
-      const weakIndicators = [
-        'README.md',         // Documentation
-        'src',               // Source directory
-        'lib',               // Library directory
+      // Code file extensions that indicate a project root (from config or defaults)
+      const codeFileExtensions = this.config?.codeFileExtensions || [
+        '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',  // TypeScript/JavaScript
+        '.py', '.pyx', '.pyi',                         // Python
+        '.php', '.phtml',                              // PHP
+        '.go',                                         // Go
+        '.rs',                                         // Rust
+        '.java', '.kt', '.kts',                        // Java/Kotlin
+        '.c', '.cpp', '.cc', '.cxx', '.h', '.hpp',     // C/C++
+        '.cs',                                         // C#
+        '.rb',                                         // Ruby
+        '.swift',                                      // Swift
+        '.dart',                                       // Dart
+        '.vue',                                        // Vue
+        '.svelte',                                     // Svelte
+        '.html', '.htm',                               // HTML
+        '.css', '.scss', '.sass', '.less',             // CSS
+        '.sh', '.bash', '.zsh', '.fish',               // Shell scripts
+        '.ps1', '.psm1',                               // PowerShell
+        '.bat', '.cmd',                                // Windows batch
       ]
       
-      // Only consider weak indicators for shallow directories to avoid false positives
-      const depth = dirPath.split(path.sep).length
-      const hasWeakIndicator = weakIndicators.some(indicator => files.includes(indicator))
+      // Check if any files have code extensions
+      const hasCodeFiles = fileNames.some(fileName => {
+        const ext = path.extname(fileName).toLowerCase()
+        return codeFileExtensions.includes(ext)
+      })
       
-      // Consider it a project only if it has weak indicators and isn't too nested
-      return hasWeakIndicator && depth <= 4 // Adjust depth threshold as needed
+      return hasCodeFiles
       
     } catch (error) {
       // If we can't read the directory, assume it's not a project

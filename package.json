@@ -1,7 +1,7 @@
 {
   "name": "manage-projects-cli",
   "version": "0.1.0",
-  "description": "A CLI tool to scan, track, and manage development projects across your /dev directory",
+  "description": "Smart CLI tool for discovering and managing development projects with intelligent status tracking, recursive scanning, and beautiful table output. Automatically detects project types (Node.js, Python, Rust, Go, PHP, Java) and analyzes project status from tracking files.",
   "main": "dist/index.js",
   "bin": {
     "projects": "dist/index.js"
