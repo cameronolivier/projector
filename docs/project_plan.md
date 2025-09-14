@@ -15,7 +15,7 @@ The **manage-projects-cli** tool development follows a structured 4-phase approa
 - [x] Core project discovery engine (`src/lib/discovery/scanner.ts`)
 - [x] File system scanning logic with recursive traversal and ignore patterns
 - [x] Basic project type detection (`src/lib/discovery/detector.ts`)
-
+ c
 #### Success Criteria ✅ ALL MET
 - [x] `projects --help` works correctly
 - [x] Can discover and list project directories in `/dev`
