@@ -11,7 +11,7 @@ The **projector** is a TypeScript/Node.js tool that scans directories for develo
 This is a modular CLI with clear separation of concerns:
 
 - **Entry Point**: `src/index.ts` - Basic oclif runner
-- **Commands**: `src/commands/` - CLI command implementations (list.ts, cache.ts)
+- **Commands**: `src/commands/` - CLI command implementations (list.ts, cache.ts, init.ts)
 - **Discovery**: `src/lib/discovery/` - File system scanning and project type detection
 - **Tracking**: `src/lib/tracking/` - Status analysis from tracking files
 - **Output**: `src/lib/output/` - Table generation and formatting
@@ -76,15 +76,22 @@ interface AnalyzedProject extends ProjectDirectory {
 The default command is `list` (runs when you type `projector`):
 
 ```bash
-projector                          # Scan default directory (runs 'list' by default)
+# Setup
+projector init                     # Interactive configuration wizard
+projector init --force             # Force overwrite existing config
+
+# Default usage (runs 'list' command automatically)
+projector                          # Scan default directory
 projector --directory ~/code       # Scan specific directory  
 projector --depth 3                # Custom scan depth
 projector --verbose                # Show progress details
 projector --no-cache              # Force fresh analysis
 projector --clear-cache           # Clear cache first
 
-projector cache:clear             # Clear all cached data
-projector cache:status            # Show cache statistics
+# Cache management
+projector cache                   # Show cache statistics
+projector cache --clear           # Clear all cached data
+projector cache --prune           # Remove old cache entries
 ```
 
 ## Key Implementation Details
@@ -103,7 +110,8 @@ projector cache:status            # Show cache statistics
 5. **Status Types**: phase, stable, active, archived, unknown
 
 ### Configuration System
-- Config location: `~/.config/projects/config.yaml` (XDG spec)
+- Config location: `~/.config/projector/config.yaml` (XDG spec)
+- Interactive setup: Run `projector init` for guided configuration
 - Configurable: scan directory, depth, tracking patterns, ignore patterns, descriptions, colors
 - Default scan directory: `/Users/cam/nona-mac/dev`
 
@@ -123,6 +131,19 @@ pnpm test -- --testNamePattern="should detect"
 
 # Run with coverage report
 pnpm test -- --coverage
+```
+
+### First Time Setup
+```bash
+# Run the interactive configuration wizard
+projector init
+
+# This will ask you to configure:
+# - Scan directory (where your projects are)
+# - Maximum depth for recursive scanning
+# - Custom ignore patterns
+# - Color scheme preference
+# - Project descriptions
 ```
 
 ### Debugging the CLI

@@ -96,16 +96,22 @@ interface AnalyzedProject extends ProjectDirectory {
 The default command is `list` (runs when you type `projector`):
 
 ```bash
-projector                          # Scan default directory (runs 'list' by default)
+# Setup and Configuration
+projector init                     # Interactive configuration wizard
+projector init --force             # Force overwrite existing config
+
+# Default usage (runs 'list' by default)
+projector                          # Scan default directory
 projector --directory ~/code       # Scan specific directory
-projector --depth 3                # Custom scan depth (default: 2)
+projector --depth 3                # Custom scan depth (default: 10)
 projector --verbose                # Show progress details and cache statistics
 projector --no-cache              # Force fresh analysis, skip cache
 projector --clear-cache           # Clear cache before scanning
 
 # Cache management
-projector cache:clear             # Clear all cached data
-projector cache:status            # Show cache statistics and performance metrics
+projector cache                   # Show cache statistics
+projector cache --clear           # Clear all cached data
+projector cache --prune           # Remove old cache entries
 ```
 
 ## Project Detection Strategy
