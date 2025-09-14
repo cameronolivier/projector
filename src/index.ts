@@ -7,9 +7,10 @@ async function main() {
     // If no arguments provided or only flags, default to 'list' command
     const argv = process.argv.slice(2)
     const hasCommand = argv.length > 0 && !argv[0].startsWith('-')
+    const isHelp = argv.includes('--help') || argv.includes('-h')
     
-    if (!hasCommand) {
-      // No command provided, add 'list' as default
+    if (!hasCommand && !isHelp) {
+      // No command provided and not asking for help, add 'list' as default
       argv.unshift('list')
       process.argv = ['node', 'projector', ...argv]
     }
