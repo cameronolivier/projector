@@ -5,6 +5,7 @@ import { TrackingAnalyzer } from '../lib/tracking/analyzer.js'
 import { TableGenerator } from '../lib/output/table.js'
 import { ConfigurationManager } from '../lib/config/config.js'
 import { CacheManager } from '../lib/cache/manager.js'
+import inquirer from 'inquirer'
 
 export default class List extends Command {
   static override description = 'Discover and analyze development projects with intelligent scanning and status tracking'
@@ -57,6 +58,19 @@ export default class List extends Command {
     'clear-cache': Flags.boolean({
       description: 'Delete all cached analysis data before scanning. Combines with fresh analysis for complete rebuild',
       default: false,
+    }),
+    select: Flags.boolean({
+      description: 'Interactively select a project from the results after scanning',
+      default: false,
+    }),
+    'path-only': Flags.boolean({
+      description: 'When used with --select, print only the selected project path (no table or extra output)',
+      default: false,
+    }),
+    format: Flags.string({
+      description: 'Format for selection output when using --select',
+      options: ['text', 'json'],
+      default: 'text',
     }),
   }
 
@@ -190,20 +204,75 @@ export default class List extends Command {
       
       // Sort projects by name
       projects.sort((a, b) => a.name.localeCompare(b.name))
-      
-      // Generate and display table
+
+      // Generate table string
       const table = tableGenerator.generateTable(projects)
-      this.log(table)
-      
-      // Display summary with cache stats
+
+      // When selecting with --path-only, suppress table output
+      const suppressOutput = Boolean(flags.select && flags['path-only'])
+      if (!suppressOutput) {
+        this.log(table)
+      }
+
+      // Display summary with cache stats unless suppressed
       const withTracking = projects.filter(p => p.status.type !== 'unknown').length
       const total = projects.length
       const cacheStats = cacheManager.getStats()
-      
-      this.log(`\nFound ${total} projects (${withTracking} with tracking, ${total - withTracking} unknown)`)
-      
-      if (flags.verbose && cacheStats.totalProjects > 0) {
-        this.log(`Cache: ${cacheStats.cacheHits} hits, ${cacheStats.cacheMisses} misses, ${cacheStats.invalidated} invalidated (${Math.round(cacheStats.cacheHitRate * 100)}% hit rate)`)
+
+      if (!suppressOutput) {
+        this.log(`\nFound ${total} projects (${withTracking} with tracking, ${total - withTracking} unknown)`)
+        if (flags.verbose && cacheStats.totalProjects > 0) {
+          this.log(`Cache: ${cacheStats.cacheHits} hits, ${cacheStats.cacheMisses} misses, ${cacheStats.invalidated} invalidated (${Math.round(cacheStats.cacheHitRate * 100)}% hit rate)`)
+        }
+      }
+
+      // Optional interactive selection flow
+      if (flags.select) {
+        const isTTY = Boolean(process.stdout.isTTY && process.stdin.isTTY)
+        if (!isTTY) {
+          this.warn('Non-interactive environment detected; --select ignored.')
+          return
+        }
+
+        try {
+          const choices = projects.map(p => ({
+            name: `${p.name} — ${p.status.type} (${p.type}) — ${p.path}`,
+            value: p.path,
+          }))
+
+          const answer = await inquirer.prompt<{ projectPath: string }>([
+            {
+              type: 'list',
+              name: 'projectPath',
+              message: 'Select a project',
+              choices,
+              pageSize: 15,
+            },
+          ])
+
+          const selected = projects.find(p => p.path === answer.projectPath)
+          if (!selected) {
+            this.error('Selected project not found in results.')
+            return
+          }
+
+          if (flags.format === 'json') {
+            const payload = {
+              name: selected.name,
+              path: selected.path,
+              type: selected.type,
+              status: selected.status,
+            }
+            this.log(JSON.stringify(payload))
+          } else {
+            // text
+            this.log(selected.path)
+          }
+        } catch (err) {
+          // Handle cancellation (Ctrl+C) gracefully
+          this.warn('Selection cancelled')
+          this.exit(130)
+        }
       }
       
     } catch (error) {

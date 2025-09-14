@@ -367,3 +367,32 @@ interface PluginManager {
 - Configurable description extraction rules
 
 This architecture provides a solid foundation for the projects CLI while maintaining flexibility for future enhancements and ensuring maintainable, testable code.
+
+## CLI Usage & Commands
+
+```bash
+# Setup and Configuration
+projector init                     # Interactive configuration wizard
+projector init --force             # Force overwrite existing config
+
+# Scanning
+projector                          # Scan default directory
+projector --directory ~/code       # Scan a specific directory
+projector --depth 3                # Custom scan depth
+projector --verbose                # Show progress details
+projector --no-cache               # Force fresh analysis
+projector --clear-cache            # Clear cache before scanning
+
+# Interactive Selection
+projector --select                 # Pick a project after scan; prints path
+projector --select --path-only     # Print only selected path (no table)
+projector --select --format json   # Print selected project as JSON
+
+# Cache Management
+projector cache                    # Show cache statistics
+projector cache --clear            # Clear all cached data
+projector cache --prune            # Remove old cache entries
+```
+
+Notes:
+- `--select` requires a TTY; in non-interactive environments it is ignored with a warning.
