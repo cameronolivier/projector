@@ -1,10 +1,10 @@
 {
-  "name": "manage-projects-cli",
+  "name": "projector",
   "version": "0.1.0",
   "description": "Smart CLI tool for discovering and managing development projects with intelligent status tracking, recursive scanning, and beautiful table output. Automatically detects project types (Node.js, Python, Rust, Go, PHP, Java) and analyzes project status from tracking files.",
   "main": "dist/index.js",
   "bin": {
-    "projects": "dist/index.js"
+    "projector": "dist/index.js"
   },
   "scripts": {
     "dev": "tsx src/index.ts",
@@ -60,8 +60,8 @@
     "dist"
   ],
   "oclif": {
-    "bin": "projects",
-    "dirname": "projects",
+    "bin": "projector",
+    "dirname": "projector",
     "commands": "./dist/commands",
     "plugins": [],
     "topicSeparator": " ",

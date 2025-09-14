@@ -41,7 +41,7 @@ export class CacheManager {
 
   constructor() {
     const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config')
-    this.cacheDir = path.join(configHome, 'projects', 'cache')
+    this.cacheDir = path.join(configHome, 'projector', 'cache')
   }
 
   async ensureCacheDir(): Promise<void> {

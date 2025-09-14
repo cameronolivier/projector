@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-The **manage-projects-cli** is a TypeScript/Node.js CLI tool that scans development directories to discover projects and display them in a beautiful table format with intelligent status tracking. Built with the oclif framework, it analyzes project types (Node.js, Python, Rust, Go, PHP, Java) and completion status through tracking files like CLAUDE.md, epics.md, and project_plan.md. The package is named `manage-projects-cli` but provides the globally available `projects` command.
+The **projector** is a TypeScript/Node.js CLI tool that scans development directories to discover projects and display them in a beautiful table format with intelligent status tracking. Built with the oclif framework, it analyzes project types (Node.js, Python, Rust, Go, PHP, Java) and completion status through tracking files like CLAUDE.md, epics.md, and project_plan.md. The package is named `projector` and provides the globally available `projector` command.
 
 ## Development Commands
 
@@ -17,7 +17,7 @@ pnpm install             # Install dependencies (requires pnpm v10+)
 **Development workflow:**
 ```bash
 pnpm dev                 # Run CLI via tsx src/index.ts (no build required)
-pnpm link                # Make 'projects' command globally available  
+pnpm link                # Make 'projector' command globally available
 pnpm unlink              # Remove global link
 
 # Testing & Quality
@@ -93,19 +93,19 @@ interface AnalyzedProject extends ProjectDirectory {
 
 ## CLI Usage & Commands
 
-The default command is `list` (runs when you type `projects`):
+The default command is `list` (runs when you type `projector`):
 
 ```bash
-projects                           # Scan default directory (/Users/cam/nona-mac/dev)
-projects --directory ~/code        # Scan specific directory
-projects --depth 3                 # Custom scan depth (default: 2)
-projects --verbose                 # Show progress details and cache statistics
-projects --no-cache               # Force fresh analysis, skip cache
-projects --clear-cache            # Clear cache before scanning
+projector                          # Scan default directory (runs 'list' by default)
+projector --directory ~/code       # Scan specific directory
+projector --depth 3                # Custom scan depth (default: 2)
+projector --verbose                # Show progress details and cache statistics
+projector --no-cache              # Force fresh analysis, skip cache
+projector --clear-cache           # Clear cache before scanning
 
 # Cache management
-projects cache:clear              # Clear all cached data
-projects cache:status             # Show cache statistics and performance metrics
+projector cache:clear             # Clear all cached data
+projector cache:status            # Show cache statistics and performance metrics
 ```
 
 ## Project Detection Strategy
@@ -151,7 +151,7 @@ Extracts version information from:
 ## Configuration System
 
 ### Location & Format
-- **Config Path:** `~/.config/projects/config.yaml` (XDG Base Directory spec)
+- **Config Path:** `~/.config/projector/config.yaml` (XDG Base Directory spec)
 - **Format:** YAML with full type safety and validation
 - **Auto-creation:** Creates default configuration on first run
 

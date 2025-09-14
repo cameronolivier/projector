@@ -53,7 +53,7 @@ export class ConfigurationManager {
       descriptions: {
         'bb': 'Bitbucket CLI with GitHub parity',
         'serena': 'External dependency project',
-        'projects': 'Development project management CLI tool',
+        'projector': 'Development project management CLI tool',
       },
       ignorePatterns: [
         'node_modules',
@@ -125,7 +125,7 @@ export class ConfigurationManager {
   private getConfigPath(): string {
     // Follow XDG Base Directory Specification
     const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config')
-    return path.join(configHome, 'projects', 'config.yaml')
+    return path.join(configHome, 'projector', 'config.yaml')
   }
 
   private async ensureConfigDirectory(): Promise<void> {

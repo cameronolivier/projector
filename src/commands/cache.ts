@@ -68,7 +68,7 @@ export default class Cache extends Command {
 
     if (flags.location) {
       const configHome = process.env.XDG_CONFIG_HOME || path.join(process.env.HOME!, '.config')
-      const cacheDir = path.join(configHome, 'projects', 'cache')
+      const cacheDir = path.join(configHome, 'projector', 'cache')
       this.log(`Cache directory: ${cacheDir}`)
     }
 
@@ -92,7 +92,7 @@ export default class Cache extends Command {
   private async showCacheStats(cacheManager: CacheManager): Promise<void> {
     try {
       const configHome = process.env.XDG_CONFIG_HOME || path.join(process.env.HOME!, '.config')
-      const cacheDir = path.join(configHome, 'projects', 'cache')
+      const cacheDir = path.join(configHome, 'projector', 'cache')
       
       let cacheSize = 0
       let fileCount = 0

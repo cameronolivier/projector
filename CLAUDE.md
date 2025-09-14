@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-The **manage-projects-cli** is a TypeScript/Node.js tool that scans directories for development projects and displays them in a beautiful table with status tracking. It uses oclif framework and scans `/dev` directories to discover projects, detect their types (Node.js, Python, Rust, etc.), and analyze completion status through tracking files like CLAUDE.md, epics.md, etc. The package is named `manage-projects-cli` but provides the `projects` command.
+The **projector** is a TypeScript/Node.js tool that scans directories for development projects and displays them in a beautiful table with status tracking. It uses oclif framework and scans `/dev` directories to discover projects, detect their types (Node.js, Python, Rust, etc.), and analyze completion status through tracking files like CLAUDE.md, epics.md, etc. The package is named `projector` and provides the `projector` command.
 
 ## Architecture
 
@@ -30,7 +30,7 @@ pnpm install             # Install dependencies (requires pnpm v10+)
 
 # Development
 pnpm dev                 # Run CLI via tsx src/index.ts (no build)
-pnpm link                # Make 'projects' command globally available
+pnpm link                # Make 'projector' command globally available
 pnpm unlink              # Remove global link
 
 # Testing & Quality
@@ -73,18 +73,18 @@ interface AnalyzedProject extends ProjectDirectory {
 
 ## CLI Usage
 
-The default command is `list` (runs when you type `projects`):
+The default command is `list` (runs when you type `projector`):
 
 ```bash
-projects                           # Scan default directory
-projects --directory ~/code        # Scan specific directory  
-projects --depth 3                 # Custom scan depth
-projects --verbose                 # Show progress details
-projects --no-cache               # Force fresh analysis
-projects --clear-cache            # Clear cache first
+projector                          # Scan default directory (runs 'list' by default)
+projector --directory ~/code       # Scan specific directory  
+projector --depth 3                # Custom scan depth
+projector --verbose                # Show progress details
+projector --no-cache              # Force fresh analysis
+projector --clear-cache           # Clear cache first
 
-projects cache:clear              # Clear all cached data
-projects cache:status             # Show cache statistics
+projector cache:clear             # Clear all cached data
+projector cache:status            # Show cache statistics
 ```
 
 ## Key Implementation Details
