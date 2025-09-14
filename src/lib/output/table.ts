@@ -1,5 +1,7 @@
 import Table from 'cli-table3'
 import chalk from 'chalk'
+import * as path from 'path'
+import * as os from 'os'
 import { AnalyzedProject, ColorScheme } from '../types.js'
 
 export class TableGenerator {
@@ -9,13 +11,14 @@ export class TableGenerator {
         chalk.hex(colorScheme?.header || '#00d4ff').bold('📁 Project'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Status'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Type'),
+        chalk.hex(colorScheme?.header || '#00d4ff').bold('📍 Location'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Description')
       ],
       style: {
         head: [],
         border: ['gray']
       },
-      colWidths: [20, 15, 12, 60],
+      colWidths: [20, 15, 12, 35, 50],
       wordWrap: true
     })
 
@@ -41,9 +44,10 @@ export class TableGenerator {
     const projectName = chalk.hex(colorScheme?.projectName || '#ffffff')(project.name)
     const status = this.formatStatus(project.status.details, project.status.type, colorScheme)
     const type = this.formatProjectType(project.type, project.languages)
+    const location = this.formatLocation(project.path)
     const description = this.formatDescription(project.description, project.status.confidence)
 
-    return [projectName, status, type, description]
+    return [projectName, status, type, location, description]
   }
 
   private formatStatus(details: string, type: string, colorScheme?: ColorScheme): string {
@@ -60,6 +64,25 @@ export class TableGenerator {
       default:
         return chalk.hex(colorScheme?.unknownStatus || '#9e9e9e')(`❓ ${details}`)
     }
+  }
+
+  private formatLocation(projectPath: string): string {
+    // Replace home directory with ~ for shorter display
+    const homeDir = os.homedir()
+    let displayPath = projectPath.replace(homeDir, '~')
+    
+    // If the path is too long, show parent directory + project name
+    if (displayPath.length > 30) {
+      const parts = displayPath.split(path.sep)
+      if (parts.length > 2) {
+        // Show ~/...parent/project format
+        const projectName = parts[parts.length - 1]
+        const parentDir = parts[parts.length - 2]
+        displayPath = `~/.../${parentDir}/${projectName}`
+      }
+    }
+    
+    return chalk.dim(displayPath)
   }
 
   private formatProjectType(type: string, languages: string[]): string {
