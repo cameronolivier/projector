@@ -62,6 +62,17 @@ export class ProjectScanner {
         return
       }
       visitedPaths.add(realPath)
+
+      // If enabled, treat presence of package.json as a definitive Node root and stop descending
+      if (this.config?.stopAtNodePackageRoot !== false) {
+        const hasPkg = await this.hasFile(currentPath, 'package.json')
+        if (hasPkg) {
+          const project = await this.createProjectDirectory(currentPath)
+          projects.push(project)
+          projectRoots.add(currentPath)
+          return
+        }
+      }
       
       // Check if this directory is a project
       const isProject = await this.isProjectDirectory(currentPath)
@@ -238,6 +249,15 @@ export class ProjectScanner {
       return await fs.readdir(dirPath)
     } catch (error) {
       return []
+    }
+  }
+
+  private async hasFile(dirPath: string, fileName: string): Promise<boolean> {
+    try {
+      const entries = await fs.readdir(dirPath)
+      return entries.includes(fileName)
+    } catch {
+      return false
     }
   }
 }

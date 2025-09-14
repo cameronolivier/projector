@@ -98,6 +98,8 @@ export class ConfigurationManager {
         '.ps1', '.psm1',                               // PowerShell
         '.bat', '.cmd',                                // Windows batch
       ],
+      // Default behavior: stop descending into directories that contain a package.json
+      stopAtNodePackageRoot: true,
       colorScheme: {
         header: '#00d4ff',      // Bright cyan
         phaseStatus: '#ff6b35',  // Orange
@@ -118,6 +120,10 @@ export class ConfigurationManager {
       descriptions: { ...defaults.descriptions, ...userConfig.descriptions },
       ignorePatterns: userConfig.ignorePatterns || defaults.ignorePatterns,
       codeFileExtensions: userConfig.codeFileExtensions || defaults.codeFileExtensions,
+      stopAtNodePackageRoot:
+        typeof (userConfig as any).stopAtNodePackageRoot === 'boolean'
+          ? (userConfig as any).stopAtNodePackageRoot
+          : defaults.stopAtNodePackageRoot,
       colorScheme: { ...defaults.colorScheme, ...userConfig.colorScheme },
     }
   }

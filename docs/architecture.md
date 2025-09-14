@@ -392,7 +392,33 @@ projector --select --format json   # Print selected project as JSON
 projector cache                    # Show cache statistics
 projector cache --clear            # Clear all cached data
 projector cache --prune            # Remove old cache entries
+
+# Jumping
+projector jump --select            # Select a project and print its path
+projector jump --name api          # Print path of first project matching "api"
+projector jump --select --print-cd # Print shell-ready `cd "<path>"`
+
+# Open in Editor
+projector open --select --editor code        # VS Code
+projector open --name api --editor webstorm  # WebStorm
+projector open --select --dry-run            # Show command only
 ```
 
 Notes:
 - `--select` requires a TTY; in non-interactive environments it is ignored with a warning.
+
+Editor CLI tips:
+- VS Code: enable `code` command from Command Palette: “Shell Command: Install 'code' command in PATH”.
+- JetBrains: install JetBrains Toolbox or enable shell scripts for `webstorm`/`idea`.
+
+### Shell Integration
+
+Add a convenience function to change directories via selection:
+
+```sh
+# bash/zsh
+pcd() { eval "$(projector jump --select --print-cd)"; }
+
+# fish
+function pcd; projector jump --select --print-cd | source; end
+```

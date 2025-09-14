@@ -77,6 +77,9 @@ export interface ProjectsConfig {
   descriptions: Record<string, string>
   ignorePatterns: string[]
   codeFileExtensions: string[]
+  // When true, treat any directory containing a package.json as a Node project root
+  // and do not descend into its subdirectories during discovery.
+  stopAtNodePackageRoot?: boolean
   colorScheme: ColorScheme
 }
 
