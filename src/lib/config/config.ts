@@ -54,6 +54,10 @@ export class ConfigurationManager {
     return {
       scanDirectory: '/Users/cam/nona-mac/dev',
       maxDepth: 10,
+      // Interactive behavior defaults
+      defaultInteractive: true,
+      defaultEditor: undefined,
+      cdSentinel: '__PROJECTOR_CD__',
       trackingPatterns: this.getDefaultTrackingPatterns(),
       descriptions: {
         'bb': 'Bitbucket CLI with GitHub parity',
@@ -153,6 +157,12 @@ export class ConfigurationManager {
     return {
       scanDirectory: userConfig.scanDirectory || defaults.scanDirectory,
       maxDepth: userConfig.maxDepth || defaults.maxDepth,
+      defaultInteractive:
+        typeof (userConfig as any).defaultInteractive === 'boolean'
+          ? (userConfig as any).defaultInteractive
+          : defaults.defaultInteractive,
+      defaultEditor: (userConfig as any).defaultEditor || defaults.defaultEditor,
+      cdSentinel: (userConfig as any).cdSentinel || defaults.cdSentinel,
       trackingPatterns: userConfig.trackingPatterns || defaults.trackingPatterns,
       descriptions: { ...defaults.descriptions, ...userConfig.descriptions },
       ignorePatterns: userConfig.ignorePatterns || defaults.ignorePatterns,

@@ -5,6 +5,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs/promises'
 import chalk from 'chalk'
+import { detectShell, findRcCandidates, getWrapperForShell, installWrapperInto, shortenHome, fileExists as fileExistsFs } from '../lib/shell/wrapper.js'
 
 export default class Init extends Command {
   static override description = 'Initialize projector configuration with an interactive setup wizard'
@@ -66,6 +67,10 @@ export default class Init extends Command {
       // Success message
       this.log(chalk.green('\n✅ Configuration saved successfully!'))
       this.log(chalk.cyan(`📁 Config location: ${configPath}`))
+
+      // Offer to install the projector shell wrapper for cd-in-place
+      await this.maybeInstallShellWrapper()
+
       this.log('\n' + chalk.yellow('Next steps:'))
       this.log('• Run ' + chalk.cyan('projector') + ' to scan your projects')
       this.log('• Use ' + chalk.cyan('projector cache') + ' to manage cache')
@@ -75,6 +80,102 @@ export default class Init extends Command {
     } catch (error) {
       this.error(`Failed to initialize configuration: ${error instanceof Error ? error.message : String(error)}`)
     }
+  }
+
+  private async maybeInstallShellWrapper() {
+    this.log('\n' + chalk.blue('🧩 Shell Integration'))
+    this.log('=====================================')
+    this.log('Install a shell wrapper so choosing "Change directory" updates your current shell.')
+
+    const { install } = await inquirer.prompt<{ install: boolean }>([
+      {
+        type: 'confirm',
+        name: 'install',
+        message: 'Would you like to add the projector shell function to your shell rc file now?',
+        default: true,
+      },
+    ])
+
+    if (!install) return
+
+    const shellName = detectShell()
+    const candidates = await findRcCandidates(shellName)
+
+    if (candidates.length === 0) {
+      this.log(chalk.yellow('Could not find a shell rc file automatically.'))
+      const { targetPath } = await inquirer.prompt<{ targetPath: string }>([
+        {
+          type: 'input',
+          name: 'targetPath',
+          message: 'Enter the full path to your shell rc file (e.g., ~/.zshrc or ~/.bashrc):',
+          filter: (v: string) => v.replace('~', os.homedir()),
+        },
+      ])
+      await this.installWrapperInto(targetPath, shellName)
+      return
+    }
+
+    let target: string
+    if (candidates.length === 1) {
+      target = candidates[0]
+      this.log(`Found shell rc file: ${chalk.cyan(shortenHome(target))}`)
+    } else {
+      const { selected } = await inquirer.prompt<{ selected: string }>([
+        {
+          type: 'list',
+          name: 'selected',
+          message: 'Multiple rc files found. Choose where to add the projector function:',
+          choices: [
+            ...candidates.map((p) => ({ name: shortenHome(p), value: p })),
+            { name: 'Other (enter a path)', value: '__OTHER__' },
+          ],
+        },
+      ])
+      if (selected === '__OTHER__') {
+        const { targetPath } = await inquirer.prompt<{ targetPath: string }>([
+          {
+            type: 'input',
+            name: 'targetPath',
+            message: 'Enter the full path to your shell rc file:',
+            filter: (v: string) => v.replace('~', os.homedir()),
+          },
+        ])
+        target = targetPath
+      } else {
+        target = selected
+      }
+    }
+
+    await this.installWrapperInto(target, shellName)
+  }
+
+  private async installWrapperInto(rcPath: string, shell: 'zsh' | 'bash' | 'fish' | 'powershell' | 'unknown') {
+    const exists = await fileExistsFs(rcPath)
+    if (!exists) {
+      this.error(`Shell rc file not found: ${rcPath}`)
+      return
+    }
+
+    const wrapper = getWrapperForShell(shell)
+    if (!wrapper) {
+      this.warn('Unknown shell type; writing bash/zsh-compatible wrapper by default.')
+    }
+    const contentToAdd = (wrapper || getWrapperForShell('zsh')!)
+
+    const result = await installWrapperInto(rcPath, contentToAdd)
+    this.log(chalk.gray(`Backup created: ${shortenHome(result.backupPath)}`))
+    this.log(chalk.green(`Installed projector wrapper in ${shortenHome(result.rcPath)}`))
+    this.postInstallMessage(shell, rcPath)
+  }
+
+  private postInstallMessage(shell: 'zsh' | 'bash' | 'fish' | 'powershell' | 'unknown', rcPath: string) {
+    this.log('\n' + chalk.yellow('To apply changes:'))
+    if (shell === 'fish') {
+      this.log(`• Run ${chalk.cyan('source ' + shortenHome(rcPath))} or open a new terminal tab`)
+    } else {
+      this.log(`• Run ${chalk.cyan('source ' + shortenHome(rcPath))} or open a new terminal tab`)
+    }
+    this.log('Then run ' + chalk.cyan('projector') + ' and choose “Change directory” to test it.')
   }
 
   private async runSetupWizard(defaults: any) {

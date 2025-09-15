@@ -48,6 +48,24 @@ projector open --name web --editor webstorm
 projector open --select --dry-run       # prints the command only
 ```
 
+## Interactive Actions and cd-in-place
+When run in a TTY, `projector` can show the table, then prompt to select a project and an action (open in editor, change directory, or print path). Changing the caller shell’s directory requires a tiny wrapper:
+
+```sh
+# bash/zsh wrapper: put in your shell rc (e.g., ~/.zshrc)
+function projector() {
+  local out
+  out="$(command projector "$@")" || return
+  if [[ "$out" == __PROJECTOR_CD__* ]]; then
+    cd "${out#__PROJECTOR_CD__ }"
+  else
+    printf '%s\n' "$out"
+  fi
+}
+```
+
+Now just run `projector`, pick a project, choose “Change directory”, and your shell will cd to it.
+
 ## Docs
 - Architecture: `docs/architecture.md`
 - Testing: `docs/TESTING.md`

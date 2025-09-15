@@ -7,7 +7,8 @@ Summary
 - Source: docs/project_plan.md#planned-features
 - [x] 0001: Interactive project selection with inquirer ([plan](./0001-interactive-project-selection-with-inquirer-plan.md))
 - [x] 0002: Jump to directory functionality ([plan](./0002-jump-to-directory-functionality-plan.md))
-- [ ] 0003: IDE integration (code ., webstorm ., etc.)
+- [x] 0003: IDE integration (code ., webstorm ., etc.) ([plan](./0003-ide-integration-code-webstorm-etc-plan.md))
+- [x] 0013: Interactive actions from table (open, cd) with shell wrapper ([plan](./0013-interactive-actions-from-table-and-shell-wrapper-plan.md))
 - [ ] 0004: Project template system
 - [ ] 0005: Advanced git integration (commit activity, branch analysis)
 

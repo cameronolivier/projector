@@ -1,4 +1,4 @@
-status: no started
+status: done
 
 # 0003 IDE Integration (code, webstorm, etc.) — Plan
 

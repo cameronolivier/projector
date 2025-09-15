@@ -77,6 +77,10 @@ export interface ProjectsConfig {
   descriptions: Record<string, string>
   ignorePatterns: string[]
   codeFileExtensions: string[]
+  // Interactive defaults and shell integration
+  defaultInteractive?: boolean
+  defaultEditor?: string
+  cdSentinel?: string
   // When true, treat any directory containing a package.json as a Node project root
   // and do not descend into its subdirectories during discovery.
   stopAtNodePackageRoot?: boolean

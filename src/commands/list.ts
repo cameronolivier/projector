@@ -6,6 +6,8 @@ import { TableGenerator } from '../lib/output/table.js'
 import { ConfigurationManager } from '../lib/config/config.js'
 import { CacheManager } from '../lib/cache/manager.js'
 import inquirer from 'inquirer'
+import { defaultEditorFromEnv, supportedEditors, buildEditorCommand, isGuiEditor, type EditorId } from '../lib/commands/open-utils.js'
+import { spawn } from 'child_process'
 
 export default class List extends Command {
   static override description = 'Discover and analyze development projects with intelligent scanning and status tracking'
@@ -71,6 +73,14 @@ export default class List extends Command {
       description: 'Format for selection output when using --select',
       options: ['text', 'json'],
       default: 'text',
+    }),
+    interactive: Flags.boolean({
+      description: 'Force interactive action flow (table → select project → choose action)',
+      default: undefined,
+    }),
+    'no-interactive': Flags.boolean({
+      description: 'Disable interactive prompts even in a TTY',
+      default: false,
     }),
   }
 
@@ -226,7 +236,7 @@ export default class List extends Command {
         }
       }
 
-      // Optional interactive selection flow
+      // Optional interactive selection flow (legacy path)
       if (flags.select) {
         const isTTY = Boolean(process.stdout.isTTY && process.stdin.isTTY)
         if (!isTTY) {
@@ -270,6 +280,92 @@ export default class List extends Command {
           }
         } catch (err) {
           // Handle cancellation (Ctrl+C) gracefully
+          this.warn('Selection cancelled')
+          this.exit(130)
+        }
+      }
+
+      // New interactive action flow: table → pick project → choose action
+      const isTTY = Boolean(process.stdout.isTTY && process.stdin.isTTY)
+      const interactiveDefault = config.defaultInteractive ?? true
+      const interactiveFlag = typeof flags.interactive === 'boolean' ? Boolean(flags.interactive) : undefined
+      const interactiveEnabled = !flags['no-interactive'] && (interactiveFlag ?? (isTTY && interactiveDefault))
+
+      if (interactiveEnabled) {
+        if (!isTTY) {
+          // Safety: only run when TTY
+          return
+        }
+
+        try {
+          const choices = projects.map(p => ({
+            name: `${p.name} — ${p.status.type} (${p.type}) — ${p.path}`,
+            value: p.path,
+          }))
+          const { projectPath } = await inquirer.prompt<{ projectPath: string }>([
+            {
+              type: 'list',
+              name: 'projectPath',
+              message: 'Select a project',
+              choices,
+              pageSize: 15,
+            },
+          ])
+
+          const defaultEditor: EditorId = (config.defaultEditor as EditorId) || defaultEditorFromEnv(process.env)
+          const actions = [
+            { name: `Open in ${defaultEditor}`, value: 'open-default' },
+            { name: 'Open in…', value: 'open-choose' },
+            { name: 'Change directory', value: 'cd' },
+            { name: 'Print path', value: 'print' },
+          ]
+          const { action } = await inquirer.prompt<{ action: string }>([
+            {
+              type: 'list',
+              name: 'action',
+              message: 'Choose action',
+              choices: actions,
+            },
+          ])
+
+          if (action === 'print') {
+            this.log(projectPath)
+            return
+          }
+
+          if (action === 'cd') {
+            const sentinel = config.cdSentinel || '__PROJECTOR_CD__'
+            this.log(`${sentinel} ${projectPath}`)
+            return
+          }
+
+          let editorId: EditorId = defaultEditor
+          if (action === 'open-choose') {
+            const editors = supportedEditors()
+            const { editor } = await inquirer.prompt<{ editor: EditorId }>([
+              {
+                type: 'list',
+                name: 'editor',
+                message: 'Select editor',
+                choices: editors.map(e => ({ name: e, value: e })),
+              },
+            ])
+            editorId = editor
+          }
+
+          // Build and spawn editor command
+          const { cmd, args } = buildEditorCommand(editorId, projectPath, { wait: false, editorArgs: [] })
+          const child = spawn(cmd, args, {
+            stdio: 'inherit',
+            shell: process.platform === 'win32',
+            detached: isGuiEditor(editorId),
+          })
+          child.on('error', (err) => {
+            this.warn(`Failed to launch editor: ${err instanceof Error ? err.message : String(err)}`)
+          })
+          // Do not wait; return to shell
+          return
+        } catch (err) {
           this.warn('Selection cancelled')
           this.exit(130)
         }
