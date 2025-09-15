@@ -12,7 +12,8 @@ Summary
 - [ ] 0005: Advanced git integration (commit activity, branch analysis)
 
 ## Discovery & Scanning
-- [ ] 0011: Stop descending into nested folders once a `package.json` is found; treat that directory as a project root and do not scan deeper (fix nested subfolder false positives)
+- [x] 0011: Stop descending into nested folders once a `package.json` is found; treat that directory as a project root and do not scan deeper (fix nested subfolder false positives) ([plan](./0011-stop-descending-into-nested-folders-package-json-as-root-plan.md))
+- [ ] 0012: Comprehensive project root detection and monorepo awareness — manifests, lockfiles, VCS boundaries, scoring, and docs-first projects ([plan](./0012-comprehensive-project-root-detection-and-monorepo-awareness-plan.md))
 
 ## Quality Gates
 - Source: docs/project_plan.md#quality-gates

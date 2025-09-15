@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { ProjectDirectory, ScanOptions, ProjectType, ProjectsConfig } from '../types.js'
+import { RootSignalScorer } from './root-scorer.js'
 
 export class ProjectScanner {
   private config?: ProjectsConfig
@@ -22,7 +23,8 @@ export class ProjectScanner {
         options.ignorePatterns,
         projects,
         visitedPaths,
-        projectRoots
+        projectRoots,
+        false
       )
 
       return projects
@@ -38,7 +40,8 @@ export class ProjectScanner {
     ignorePatterns: string[],
     projects: ProjectDirectory[],
     visitedPaths: Set<string>,
-    projectRoots: Set<string>
+    projectRoots: Set<string>,
+    allowInsideRoots: boolean = false
   ): Promise<void> {
     // Check depth limit
     if (currentDepth >= maxDepth) {
@@ -51,8 +54,10 @@ export class ProjectScanner {
     }
     
     // Skip if inside an already identified project root
-    if (Array.from(projectRoots).some(root => currentPath.startsWith(root + path.sep))) {
-      return
+    if (!allowInsideRoots) {
+      if (Array.from(projectRoots).some(root => currentPath.startsWith(root + path.sep))) {
+        return
+      }
     }
     
     try {
@@ -63,17 +68,71 @@ export class ProjectScanner {
       }
       visitedPaths.add(realPath)
 
-      // If enabled, treat presence of package.json as a definitive Node root and stop descending
-      if (this.config?.stopAtNodePackageRoot !== false) {
-        const hasPkg = await this.hasFile(currentPath, 'package.json')
-        if (hasPkg) {
+      const scorer = new RootSignalScorer(this.config as ProjectsConfig)
+      const signals = await scorer.collectSignals(currentPath)
+
+      // Denylist / path-based skip
+      if ((this.config?.denylistPaths || []).some((p) => realPath.includes(p))) {
+        return
+      }
+
+      // Stop at VCS root if configured and not at the base path yet
+      if ((this.config?.stopAtVcsRoot ?? true) && signals.hasGit) {
+        // Consider current directory as a root candidate as well
+        const score = scorer.scoreSignals(signals)
+        if (score >= 60) {
           const project = await this.createProjectDirectory(currentPath)
           projects.push(project)
           projectRoots.add(currentPath)
           return
         }
       }
-      
+
+      // Generalized early-stop for strong roots (including package.json)
+      const score = scorer.scoreSignals(signals)
+      if (score >= 60) {
+        const project = await this.createProjectDirectory(currentPath)
+        projects.push(project)
+        projectRoots.add(currentPath)
+
+        // If monorepo and config includes nested packages, traverse only workspace globs
+        if ((this.config?.includeNestedPackages && this.config.includeNestedPackages !== 'never')) {
+          const globs = await scorer.workspaceGlobs(currentPath, signals)
+          if (globs.length > 0) {
+            // Resolve simple globs like packages/* one level deep
+            const targets = new Set<string>()
+            for (const g of globs) {
+              if (g.endsWith('/*')) {
+                const base = g.slice(0, -2)
+                const resolvedBase = path.join(currentPath, base)
+                try {
+                  const subEntries = await fs.readdir(resolvedBase, { withFileTypes: true })
+                  for (const e of subEntries) {
+                    if (e.isDirectory()) targets.add(path.join(resolvedBase, e.name))
+                  }
+                } catch {}
+              } else {
+                targets.add(path.join(currentPath, g))
+              }
+            }
+            for (const t of Array.from(targets)) {
+              await this.scanDirectoryRecursive(
+                t,
+                currentDepth + 1,
+                maxDepth,
+                ignorePatterns,
+                projects,
+                visitedPaths,
+                projectRoots,
+                true
+              )
+            }
+          }
+        }
+        // Regardless, we do not continue generic descent from strong roots
+        return
+      }
+
       // Check if this directory is a project
       const isProject = await this.isProjectDirectory(currentPath)
       if (isProject) {
@@ -103,7 +162,8 @@ export class ProjectScanner {
               ignorePatterns,
               projects,
               visitedPaths,
-              projectRoots
+              projectRoots,
+              false
             )
           )
         )
@@ -119,12 +179,6 @@ export class ProjectScanner {
     try {
       const files = await fs.readdir(dirPath, { withFileTypes: true })
       const fileNames = files.map(f => f.name)
-      
-      // Check if node_modules directory exists - strong indicator of project root
-      const hasNodeModules = files.some(f => f.isDirectory() && f.name === 'node_modules')
-      if (hasNodeModules) {
-        return true
-      }
       
       // Strong project indicators (manifest files) - these are definitive project roots
       const strongIndicators = [

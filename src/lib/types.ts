@@ -80,6 +80,15 @@ export interface ProjectsConfig {
   // When true, treat any directory containing a package.json as a Node project root
   // and do not descend into its subdirectories during discovery.
   stopAtNodePackageRoot?: boolean
+  // Comprehensive root detection configuration
+  rootMarkers?: string[]
+  monorepoMarkers?: string[]
+  lockfilesAsStrong?: boolean
+  minCodeFilesToConsider?: number
+  stopAtVcsRoot?: boolean
+  includeNestedPackages?: 'never' | 'when-monorepo' | 'always'
+  respectGitIgnore?: boolean
+  denylistPaths?: string[]
   colorScheme: ColorScheme
 }
 

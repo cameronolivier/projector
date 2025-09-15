@@ -45,6 +45,11 @@ export class ConfigurationManager {
     }
   }
 
+  // Returns absolute path to the config file
+  getPath(): string {
+    return this.configPath
+  }
+
   getDefaultConfig(): ProjectsConfig {
     return {
       scanDirectory: '/Users/cam/nona-mac/dev',
@@ -100,6 +105,38 @@ export class ConfigurationManager {
       ],
       // Default behavior: stop descending into directories that contain a package.json
       stopAtNodePackageRoot: true,
+      // Root detection extensions
+      rootMarkers: [
+        'package.json',
+        'pyproject.toml',
+        'Cargo.toml',
+        'go.mod',
+        'composer.json',
+        'pom.xml',
+        'build.gradle',
+        'settings.gradle',
+        'CMakeLists.txt',
+        'Makefile',
+        'Gemfile',
+      ],
+      monorepoMarkers: [
+        'pnpm-workspace.yaml',
+        'lerna.json',
+        'turbo.json',
+        'nx.json',
+        'go.work',
+      ],
+      lockfilesAsStrong: true,
+      minCodeFilesToConsider: 5,
+      stopAtVcsRoot: true,
+      includeNestedPackages: 'when-monorepo',
+      respectGitIgnore: false,
+      denylistPaths: [
+        'examples',
+        'fixtures',
+        'samples',
+        'docs/site',
+      ],
       colorScheme: {
         header: '#00d4ff',      // Bright cyan
         phaseStatus: '#ff6b35',  // Orange
@@ -124,6 +161,23 @@ export class ConfigurationManager {
         typeof (userConfig as any).stopAtNodePackageRoot === 'boolean'
           ? (userConfig as any).stopAtNodePackageRoot
           : defaults.stopAtNodePackageRoot,
+      rootMarkers: (userConfig as any).rootMarkers || defaults.rootMarkers,
+      monorepoMarkers: (userConfig as any).monorepoMarkers || defaults.monorepoMarkers,
+      lockfilesAsStrong:
+        typeof (userConfig as any).lockfilesAsStrong === 'boolean'
+          ? (userConfig as any).lockfilesAsStrong
+          : defaults.lockfilesAsStrong,
+      minCodeFilesToConsider: (userConfig as any).minCodeFilesToConsider || defaults.minCodeFilesToConsider,
+      stopAtVcsRoot:
+        typeof (userConfig as any).stopAtVcsRoot === 'boolean'
+          ? (userConfig as any).stopAtVcsRoot
+          : defaults.stopAtVcsRoot,
+      includeNestedPackages: (userConfig as any).includeNestedPackages || defaults.includeNestedPackages,
+      respectGitIgnore:
+        typeof (userConfig as any).respectGitIgnore === 'boolean'
+          ? (userConfig as any).respectGitIgnore
+          : defaults.respectGitIgnore,
+      denylistPaths: (userConfig as any).denylistPaths || defaults.denylistPaths,
       colorScheme: { ...defaults.colorScheme, ...userConfig.colorScheme },
     }
   }

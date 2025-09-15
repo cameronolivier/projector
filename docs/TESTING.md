@@ -20,6 +20,10 @@ Jest is configured to:
 ## Project Test Layout
 - `test/` — place unit and integration tests here
 - Example utils tests: `test/jump-utils.test.ts`
+- Discovery tests:
+  - `test/scanner-package-root.test.ts` — early stop at `package.json` roots
+  - `test/root-scorer.test.ts` — signal collection and scoring, workspace globs
+  - `test/scanner-monorepo-docs.test.ts` — monorepo traversal and docs-first projects
 - Recommended patterns:
   - Unit test pure helpers in `src/lib/**`
   - Keep command tests focused on small units (serialization, filtering)
@@ -51,3 +55,7 @@ Object.defineProperty(process.stdout, 'isTTY', { value: original })
 - Prioritize core logic: discovery filters, analyzers, table formatting, and new command helpers.
 - Aim for coverage on new helpers; full E2E CLI spawning is optional.
 - Use `--coverage` locally to track progress; no thresholds enforced yet.
+### Discovery/Scanner Tests
+- Mock `fs/promises` to provide a synthetic directory tree. Expose a `__setMockTree` helper in the mock to control `readdir`/`readFile` outputs.
+- Keep tests shallow: prefer name checks (`readdir` with `withFileTypes`) and avoid deep content parsing.
+- Validate both classification and traversal behavior: early stops at strong roots, optional descent into monorepo workspaces, and detection of docs-first projects (top-level `docs/` with markdown).

@@ -60,6 +60,22 @@ interface ScanOptions {
 - Application of ignore patterns (node_modules, .git, etc.)
 - Symlink handling with cycle detection
 - Parallel directory processing for performance
+- Root detection via scoring and early stop for strong roots
+- Monorepo-aware traversal into workspace/module globs when enabled
+
+#### RootSignalScorer (`root-scorer.ts`)
+**Purpose**: Identify and score project root candidates by combining multiple signals.
+
+**Signals & Weights**
+- Strong (+100): Manifests (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `composer.json`, `pom.xml`, `build.gradle`, `settings.gradle`, `CMakeLists.txt`, `Makefile`, `Gemfile`, `*.gemspec`); monorepo markers (`pnpm-workspace.yaml`, `lerna.json`, `turbo.json`, `nx.json`, `go.work`).
+- Lockfiles (+60, when enabled): `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `poetry.lock`, `Pipfile.lock`, `Cargo.lock`, `composer.lock`.
+- VCS: `.git` (+30 baseline; +50 extra with manifest) when `stopAtVcsRoot` is true.
+- Docs-first (+60): top-level `docs/` with at least one markdown file.
+- Structure (+40): presence of `src/`, `app/`, `lib/`, `tests/`.
+- Code threshold (+30): ≥ `minCodeFilesToConsider` files matching `codeFileExtensions`.
+- Negative (−50): only vendored/build/example directories present.
+
+Roots are accepted when score ≥ 60. Overlapping candidates prefer the shallower directory. Strong roots stop generic descent. If monorepo markers are present and `includeNestedPackages` permits, the scanner follows workspace/module globs (e.g., `packages/*`) and registers nested packages.
 
 #### TypeDetector (`detector.ts`)
 **Purpose**: Project type and language identification
@@ -171,8 +187,28 @@ interface ProjectsConfig {
   trackingPatterns: TrackingPattern[]
   descriptions: Record<string, string>
   ignorePatterns: string[]
+  codeFileExtensions: string[]
+  // Node early-stop
+  stopAtNodePackageRoot?: boolean
+  // Root detection / monorepo
+  rootMarkers?: string[]
+  monorepoMarkers?: string[]
+  lockfilesAsStrong?: boolean
+  minCodeFilesToConsider?: number
+  stopAtVcsRoot?: boolean
+  includeNestedPackages?: 'never' | 'when-monorepo' | 'always'
+  respectGitIgnore?: boolean
+  denylistPaths?: string[]
   colorScheme: ColorScheme
 }
+
+Defaults favor correctness and speed:
+- `stopAtVcsRoot: true`
+- `includeNestedPackages: 'when-monorepo'`
+- `lockfilesAsStrong: true`
+- `minCodeFilesToConsider: 5`
+- `rootMarkers` and `monorepoMarkers` include common ecosystem files
+- Docs-first projects: directory with `docs/` and markdown is accepted as a root
 ```
 
 ## Data Models

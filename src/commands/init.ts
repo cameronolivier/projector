@@ -70,6 +70,7 @@ export default class Init extends Command {
       this.log('• Run ' + chalk.cyan('projector') + ' to scan your projects')
       this.log('• Use ' + chalk.cyan('projector cache') + ' to manage cache')
       this.log('• Edit ' + chalk.cyan(configPath) + ' to fine-tune settings')
+      this.log('• See ' + chalk.cyan('docs/config.md') + ' for all configuration options')
       
     } catch (error) {
       this.error(`Failed to initialize configuration: ${error instanceof Error ? error.message : String(error)}`)
