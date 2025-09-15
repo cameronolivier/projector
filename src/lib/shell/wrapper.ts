@@ -100,12 +100,9 @@ export async function installWrapperInto(rcPath: string, content: string): Promi
   const backupPath = `${rcPath}.bak-${Date.now()}`
   await fs.copyFile(rcPath, backupPath)
 
-  let updatedContent: string
-  if (original.includes(begin)) {
-    updatedContent = original.replace(new RegExp(`${escapeRegExp(begin)}[\s\S]*?${escapeRegExp(end)}`), `${begin}\n${content}\n${end}`)
-  } else {
-    updatedContent = `${original}\n\n${begin}\n${content}\n${end}\n`
-  }
+  // Always strip any existing wrapper block(s), then append a fresh one idempotently
+  const withoutBlock = stripWrapperBlocks(original).updated.trimEnd()
+  const updatedContent = `${withoutBlock}\n\n${begin}\n${content}\n${end}\n`
 
   await fs.writeFile(rcPath, updatedContent, 'utf8')
   return { rcPath, backupPath, updated: true }
@@ -120,6 +117,22 @@ export function shortenHome(p: string): string {
   return p.startsWith(home) ? p.replace(home, '~') : p
 }
 
-function escapeRegExp(s: string): string {
+export function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+export function stripWrapperBlocks(content: string): { updated: string; removedCount: number } {
+  const begin = '# >>> projector wrapper >>>'
+  const end = '# <<< projector wrapper <<<'
+  let removedCount = 0
+  let updated = content
+  for (;;) {
+    const start = updated.indexOf(begin)
+    if (start === -1) break
+    const endIdx = updated.indexOf(end, start)
+    if (endIdx === -1) break
+    updated = updated.slice(0, start) + updated.slice(endIdx + end.length)
+    removedCount += 1
+  }
+  return { updated: updated.trimEnd() + '\n', removedCount }
 }

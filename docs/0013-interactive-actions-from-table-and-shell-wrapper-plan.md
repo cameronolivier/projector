@@ -99,3 +99,12 @@ Enable a seamless TTY-first workflow where running `projector` (list) lets the u
 - Fuzzy search or fzf integration.
 - New actions beyond the four listed.
 - Persistent keybindings or TUI interface.
+
+## Completion Notes
+- Status: Completed end-to-end across macOS/Linux and Windows.
+- Sentinel: `config.cdSentinel` drives both CLI emission and wrapper generation.
+- Flags: `--interactive`/`--no-interactive` respected; non-TTY remains non-interactive by default.
+- Editors: Open flows reuse `open-utils` with safe spawn arguments.
+- Wrappers: Install/remove idempotent with backups; regex for removal hardened.
+- Docs: Architecture updated; README includes bash/zsh, fish, PowerShell snippets and `projector shell` usage (`--dry-run`, `--remove`).
+- Tests: Added coverage for interactive gating, cd emission, editor spawn, and shell installer behaviors.

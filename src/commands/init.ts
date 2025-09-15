@@ -156,11 +156,12 @@ export default class Init extends Command {
       return
     }
 
-    const wrapper = getWrapperForShell(shell)
+    const cfg = await new ConfigurationManager().loadConfig()
+    const wrapper = getWrapperForShell(shell, cfg.cdSentinel || '__PROJECTOR_CD__')
     if (!wrapper) {
       this.warn('Unknown shell type; writing bash/zsh-compatible wrapper by default.')
     }
-    const contentToAdd = (wrapper || getWrapperForShell('zsh')!)
+    const contentToAdd = (wrapper || getWrapperForShell('zsh', cfg.cdSentinel || '__PROJECTOR_CD__')!)
 
     const result = await installWrapperInto(rcPath, contentToAdd)
     this.log(chalk.gray(`Backup created: ${shortenHome(result.backupPath)}`))

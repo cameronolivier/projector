@@ -336,7 +336,7 @@ export default class List extends Command {
           if (action === 'cd') {
             const sentinel = config.cdSentinel || '__PROJECTOR_CD__'
             this.log(`${sentinel} ${projectPath}`)
-            return
+            this.exit(0)
           }
 
           let editorId: EditorId = defaultEditor

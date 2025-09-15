@@ -2,8 +2,9 @@ import { Command, Flags } from '@oclif/core'
 import inquirer from 'inquirer'
 import chalk from 'chalk'
 import * as os from 'os'
-import { detectShell, findRcCandidates, getWrapperForShell, installWrapperInto, shortenHome } from '../lib/shell/wrapper.js'
+import { detectShell, findRcCandidates, getWrapperForShell, installWrapperInto, shortenHome, escapeRegExp, stripWrapperBlocks } from '../lib/shell/wrapper.js'
 import * as fs from 'fs/promises'
+import { ConfigurationManager } from '../lib/config/config.js'
 
 export default class ShellCmd extends Command {
   static override description = 'Manage shell integration (install or remove the projector shell wrapper)'
@@ -33,7 +34,8 @@ export default class ShellCmd extends Command {
     }
 
     const shellKind = (flags.shell as any) || detectShell()
-    const sentinel = '__PROJECTOR_CD__'
+    const cfg = await new ConfigurationManager().loadConfig()
+    const sentinel = cfg.cdSentinel || '__PROJECTOR_CD__'
 
     let rcPath = flags.rc ? flags.rc.replace('~', os.homedir()) : ''
     if (!rcPath) {
@@ -93,7 +95,7 @@ export default class ShellCmd extends Command {
       }
       const backupPath = `${rcPath}.bak-${Date.now()}`
       await fs.copyFile(rcPath, backupPath)
-      const updated = original.replace(new RegExp(`${begin}[\s\S]*?${end}`), '').trimEnd() + '\n'
+      const { updated } = stripWrapperBlocks(original)
       await fs.writeFile(rcPath, updated, 'utf8')
       this.log(chalk.gray(`Backup created: ${shortenHome(backupPath)}`))
       this.log(chalk.green(`Removed projector wrapper from ${shortenHome(rcPath)}`))
@@ -129,7 +131,7 @@ export default class ShellCmd extends Command {
         return
       }
       this.log(chalk.yellow('Dry run: would remove the projector wrapper block from: ') + chalk.cyan(shortenHome(rcPath)))
-      const match = original.match(new RegExp(`${begin}[\s\S]*?${end}`))
+      const match = original.match(new RegExp(`${escapeRegExp(begin)}[\s\S]*?${escapeRegExp(end)}`))
       if (match) {
         this.log('\n----- BLOCK TO REMOVE -----')
         this.log(match[0])

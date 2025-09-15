@@ -458,3 +458,16 @@ pcd() { eval "$(projector jump --select --print-cd)"; }
 # fish
 function pcd; projector jump --select --print-cd | source; end
 ```
+
+### Interactive Actions
+
+When running in a TTY, the default `list` command can enter an interactive action flow:
+- Render the projects table to stdout.
+- Prompt the user to select a project.
+- Prompt the user to select an action: open in editor (default or chosen), change directory, or print path.
+
+Behavior details:
+- Gating: `--interactive` forces the flow; `--no-interactive` disables. By default it runs only when both stdin and stdout are TTYs and `defaultInteractive` is true in config.
+- cd emission: On “Change directory”, the CLI prints `<cdSentinel> <abs-path>` and exits(0). The shell wrapper detects this and `cd`s in the caller shell.
+- Editors: Editor command is constructed via `buildEditorCommand`, honoring `defaultEditor` in config and environment.
+- Legacy selection: `--select` remains for printing paths; precedence is documented and both can co-exist. In non-TTY environments, interactive prompts are skipped with a warning.
