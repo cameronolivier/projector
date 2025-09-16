@@ -6,7 +6,10 @@ const importAfterMocks = async <T>(path: string): Promise<T> => {
 }
 
 describe('list command - interactive flow', () => {
-  const realIsTTY = { out: process.stdout.isTTY, inp: process.stdin.isTTY }
+  const realIsTTY = { 
+    out: process.stdout.isTTY, 
+    inp: process.stdin.isTTY 
+  }
   let injectedFlags: any
 
   beforeEach(() => {
@@ -18,8 +21,12 @@ describe('list command - interactive flow', () => {
   })
 
   afterEach(() => {
+    // Properly restore TTY state
     ;(process.stdout as any).isTTY = realIsTTY.out
     ;(process.stdin as any).isTTY = realIsTTY.inp
+    
+    // Clean up any lingering handles
+    jest.clearAllMocks()
   })
 
   const mockOclifCore = () => {

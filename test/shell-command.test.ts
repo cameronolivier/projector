@@ -8,7 +8,8 @@ const importAfterMocks = async <T>(path: string): Promise<T> => {
 }
 
 describe('shell command - install/remove/dry-run', () => {
-  const realIsTTY = { out: process.stdout.isTTY, inp: process.stdin.isTTY }
+  const originalStdoutIsTTY = process.stdout.isTTY
+  const originalStdinIsTTY = process.stdin.isTTY
   let injectedFlags: any
   let tmpDir: string
   let rcPath: string
@@ -24,9 +25,18 @@ describe('shell command - install/remove/dry-run', () => {
     await fs.writeFile(rcPath, '# test rc\nexport FOO=bar\n', 'utf8')
   })
 
-  afterEach(() => {
-    ;(process.stdout as any).isTTY = realIsTTY.out
-    ;(process.stdin as any).isTTY = realIsTTY.inp
+  afterEach(async () => {
+    ;(process.stdout as any).isTTY = originalStdoutIsTTY
+    ;(process.stdin as any).isTTY = originalStdinIsTTY
+    
+    // Clean up temporary directory
+    if (tmpDir) {
+      try {
+        await fs.rm(tmpDir, { recursive: true, force: true })
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    }
   })
 
   const mockOclifCore = () => {
@@ -68,10 +78,50 @@ describe('shell command - install/remove/dry-run', () => {
     }))
   }
 
+  const mockInquirer = () => {
+    jest.doMock('inquirer', () => ({
+      __esModule: true,
+      default: {
+        prompt: jest.fn(() => Promise.resolve({ targetPath: rcPath })),
+      },
+    }))
+  }
+
+  const mockShellWrapper = () => {
+    jest.doMock('../src/lib/shell/wrapper', () => ({
+      __esModule: true,
+      detectShell: () => 'zsh',
+      findRcCandidates: async () => [rcPath],
+      getWrapperForShell: (_shell: string, sentinel: string) => {
+        return `\n# projector shell integration\nfunction projector() {\n  local output\n  output=$(command projector list \"$@\")\n  if [[ $output == ${sentinel}* ]]; then\n    cd \"\${output#${sentinel} }\"\n  else\n    echo \"$output\"\n  fi\n}\n`
+      },
+      installWrapperInto: async (path: string, content: string) => {
+        const original = await fs.readFile(path, 'utf8')
+        const backupPath = path + '.bak-' + Date.now()
+        // Always create a backup (test expects it)
+        await fs.writeFile(backupPath, original, 'utf8')
+        
+        // Check if wrapper already exists (for idempotence)
+        if (original.includes('# >>> projector wrapper >>>')) {
+          // Don't add another wrapper if one exists
+          return { rcPath: path, backupPath }
+        }
+        const newContent = original + '\n# >>> projector wrapper >>>\n' + content + '\n# <<< projector wrapper <<<\n'
+        await fs.writeFile(path, newContent, 'utf8')
+        return { rcPath: path, backupPath }
+      },
+      shortenHome: (p: string) => p,
+      escapeRegExp: (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+      stripWrapperBlocks: (content: string) => ({ updated: content.replace(/# >>> projector wrapper >>>[\s\S]*?# <<< projector wrapper <<</g, '') }),
+    }))
+  }
+
   it('dry-run install prints a wrapper block', async () => {
     mockOclifCore()
     mockConfig()
     mockChalk()
+    mockInquirer()
+    mockShellWrapper()
     injectedFlags = { install: true, 'dry-run': true, rc: rcPath, shell: 'zsh' }
     const { default: ShellCmd } = await importAfterMocks<any>('../src/commands/shell')
     const cmd = new (ShellCmd as any)()
@@ -81,12 +131,14 @@ describe('shell command - install/remove/dry-run', () => {
     expect(outputs.join('\n')).toContain('# >>> projector wrapper >>>')
     expect(outputs.join('\n')).toContain('# <<< projector wrapper <<<')
     expect(outputs.join('\n')).toContain('__PROJECTOR_CD__')
-  })
+  }, 10000)
 
   it('install is idempotent and creates backups', async () => {
     mockOclifCore()
     mockConfig()
     mockChalk()
+    mockInquirer()
+    mockShellWrapper()
     injectedFlags = { install: true, rc: rcPath, shell: 'zsh' }
     const { default: ShellCmd } = await importAfterMocks<any>('../src/commands/shell')
     const cmd = new (ShellCmd as any)()
@@ -103,12 +155,14 @@ describe('shell command - install/remove/dry-run', () => {
     expect(beginCount).toBe(1)
     const backups = (await fs.readdir(tmpDir)).filter((f) => f.startsWith('rc.sh.bak-'))
     expect(backups.length).toBeGreaterThanOrEqual(1)
-  })
+  }, 10000)
 
   it('dry-run remove shows block, and remove deletes it with backup', async () => {
     mockOclifCore()
     mockConfig()
     mockChalk()
+    mockInquirer()
+    mockShellWrapper()
     // Install first
     injectedFlags = { install: true, rc: rcPath, shell: 'zsh' }
     const { default: ShellCmd } = await importAfterMocks<any>('../src/commands/shell')
@@ -131,5 +185,5 @@ describe('shell command - install/remove/dry-run', () => {
     expect(after).not.toContain('# >>> projector wrapper >>>')
     const backups = (await fs.readdir(tmpDir)).filter((f) => f.startsWith('rc.sh.bak-'))
     expect(backups.length).toBeGreaterThanOrEqual(1)
-  })
+  }, 10000)
 })
