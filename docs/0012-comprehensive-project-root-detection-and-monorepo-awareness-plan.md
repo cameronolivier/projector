@@ -1,4 +1,4 @@
-status: in progress
+status: done
 
 # 0012 Comprehensive Project Root Detection and Monorepo Awareness — Plan
 
@@ -57,33 +57,44 @@ Reduce false positives and false negatives in project discovery by:
 - `denylistPaths: string[]` — globs/regexes to always skip.
 
 ## Implementation Steps
-1. Extend `ProjectsConfig` with fields above; add defaults in `ConfigurationManager` and merge logic.
+1. Extend `ProjectsConfig` with fields above; add defaults in `ConfigurationManager` and merge logic. ✅
 2. Create `RootSignalScorer` in `src/lib/discovery/`:
    - `collectSignals(dir): RootSignals` (files, dirs, presence checks).
-   - `scoreSignals(signals, config): number`.
-   - `isMonorepoRoot(signals): boolean` and `workspaceGlobs(dir): string[]`.
+   - `scoreSignals(signals, config): number`. ✅
+   - `isMonorepoRoot(signals): boolean` and `workspaceGlobs(dir): string[]`. ✅ (workspaceGlobs now supports pnpm/lerna/package.json workspaces, go.work, Cargo [workspace].members, Maven modules, and Gradle includes)
 3. Update `ProjectScanner.scanDirectoryRecursive`:
    - Early stop for strong manifest markers (generalize beyond `package.json`).
    - If monorepo root and `includeNestedPackages !== 'never'`: follow workspace/module globs; otherwise stop.
    - Respect `stopAtVcsRoot`.
    - Consider docs-first: if `docs/` exists with markdown and score ≥ threshold, register as root.
-4. Demote `node_modules` existence from project indicator; rely on scoring.
-5. Add ignore and denylist checks to traversal.
+4. Demote `node_modules` existence from project indicator; rely on scoring. ✅
+5. Add ignore and denylist checks to traversal. ✅
 6. Tests:
    - Unit: scorer weights for various combinations (manifest+lockfile, docs-first without code, monorepo markers, negative dirs only).
    - Scanner: monorepo root with nested packages included/excluded; VCS boundary; denylist skip; docs-first root detection.
-7. Docs: update architecture and TESTING notes about root detection, config flags, docs-first projects, and trade-offs.
+   - Added parsers/tests for go.work, Cargo workspaces, Maven modules, Gradle settings includes. ✅
+7. Docs: update architecture and TESTING notes about root detection, config flags, docs-first projects, and trade-offs. ✅
 
 ## Acceptance Criteria
-- Detects roots reliably across Node/Python/Rust/Go/Java/PHP and common monorepo setups.
-- Respects stop-at `.git` and monorepo policies.
-- Identifies docs-first projects via `docs/` when no code or git exists.
-- No regressions in performance; scanning remains responsive with defaults.
+- Detects roots reliably across Node/Python/Rust/Go/Java/PHP and common monorepo setups. ✅
+- Respects stop-at `.git` and monorepo policies. ✅
+- Identifies docs-first projects via `docs/` when no code or git exists. ✅
+- No regressions in performance; scanning remains responsive with defaults. ✅
 
 ## Risks & Mitigations
 - Complexity of scoring may introduce surprises: document weights and provide config overrides.
 - Performance impact when reading many files: prefer `readdir` name checks, avoid deep reads, and cap depth.
-- Git ignore parsing can be expensive: keep off by default; consider caching.
+- Git ignore parsing can be expensive: keep off by default; consider caching. Note: `respectGitIgnore` remains optional/off by default.
+
+## Completion Notes
+- Monorepo parsing implemented for:
+  - pnpm (`pnpm-workspace.yaml`), Lerna (`lerna.json`), NPM/Yarn (`package.json` workspaces)
+  - Go (`go.work` use directives, single and block forms)
+  - Rust (Cargo `[workspace].members` arrays, including simple globs like `crates/*`)
+  - Maven (`pom.xml` `<modules><module>…</module></modules>`)
+  - Gradle (`settings.gradle`/`.kts` `include` forms, e.g. `':app', ':lib'`)
+- Tests added: `test/scanner-monorepo-others.test.ts` for Go/Cargo/Maven/Gradle; existing tests cover pnpm and docs-first.
+- Architecture doc updated to reflect scoring model and monorepo traversal; defaults wired via config.
 
 ## Out of Scope
 - Full `.gitignore` engine parity; fuzzy matching; language-specific deep analysis.
