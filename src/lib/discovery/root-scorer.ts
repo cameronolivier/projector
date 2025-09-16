@@ -150,6 +150,95 @@ export class RootSignalScorer {
         }
       }
     } catch {}
+    // Go workspaces (go.work)
+    try {
+      if (signals.files.includes('go.work')) {
+        const content = await fs.readFile(path.join(dir, 'go.work'), 'utf8')
+        // Remove comments
+        const noComments = content
+          .split('\n')
+          .map((l) => l.replace(/\s*\/\/.*$/, ''))
+          .join('\n')
+        // Match use directives: either single-line `use ./path` or block `use (\n ./a\n ./b\n)`
+        const blockMatch = noComments.match(/use\s*\(([^)]*)\)/m)
+        if (blockMatch) {
+          const lines = blockMatch[1]
+            .split(/\r?\n/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0)
+          for (const l of lines) {
+            // Only include local directories
+            if (!/^\w+@/.test(l)) {
+              globs.push(l.replace(/^\.\//, ''))
+            }
+          }
+        }
+        const singleUse = noComments.match(/\buse\s+([^\s]+)/)
+        if (singleUse && singleUse[1]) {
+          const p = singleUse[1]
+          if (!/^\w+@/.test(p)) globs.push(p.replace(/^\.\//, ''))
+        }
+      }
+    } catch {}
+    // Cargo workspaces (Cargo.toml [workspace].members)
+    try {
+      if (signals.files.includes('Cargo.toml')) {
+        const content = await fs.readFile(path.join(dir, 'Cargo.toml'), 'utf8')
+        const wsIdx = content.indexOf('[workspace]')
+        if (wsIdx !== -1) {
+          const tail = content.slice(wsIdx)
+          const membersMatch = tail.match(/members\s*=\s*\[([\s\S]*?)\]/m)
+          if (membersMatch) {
+            const arr = membersMatch[1]
+            const re = /"([^"]+)"|'([^']+)'/g
+            let m: RegExpExecArray | null
+            while ((m = re.exec(arr))) {
+              const v = (m[1] || m[2] || '').trim()
+              if (v) globs.push(v)
+            }
+          }
+        }
+      }
+    } catch {}
+    // Maven multi-module (pom.xml <modules>)
+    try {
+      if (signals.files.includes('pom.xml')) {
+        const content = await fs.readFile(path.join(dir, 'pom.xml'), 'utf8')
+        const block = content.match(/<modules>[\s\S]*?<\/modules>/m)
+        if (block) {
+          const re = /<module>\s*([^<\s]+)\s*<\/module>/g
+          let m: RegExpExecArray | null
+          while ((m = re.exec(block[0]))) {
+            const v = (m[1] || '').trim()
+            if (v) globs.push(v)
+          }
+        }
+      }
+    } catch {}
+    // Gradle settings (settings.gradle / settings.gradle.kts)
+    try {
+      const gradleFiles = ['settings.gradle', 'settings.gradle.kts']
+      for (const gf of gradleFiles) {
+        if (signals.files.includes(gf)) {
+          const content = await fs.readFile(path.join(dir, gf), 'utf8')
+          // Match include forms: include 'app', 'lib' OR include(':app', ':lib')
+          const includeRe = /include\s*\(([^)]*)\)|include\s+([^\n]+)/g
+          let m: RegExpExecArray | null
+          while ((m = includeRe.exec(content))) {
+            const args = (m[1] || m[2] || '')
+            const parts = args
+              .split(',')
+              .map((s) => s.replace(/['"()\s]/g, ''))
+              .filter((s) => s.length > 0)
+            for (const p of parts) {
+              // Convert Gradle path notation to directories (':app:lib' → 'app/lib')
+              const clean = p.replace(/^:/, '').replace(/:/g, path.sep)
+              if (clean) globs.push(clean)
+            }
+          }
+        }
+      }
+    } catch {}
     return globs
   }
 }
