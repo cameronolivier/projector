@@ -49,7 +49,7 @@ export function getWrapperForShell(shell: ShellKind, sentinel = '__PROJECTOR_CD_
     '  local out',
     '  out="$(command projector \"$@\")" || return',
     '  case "$out" in',
-    `    *${sentinel} *) cd "\${out##*${sentinel} }" ;;`,
+    `    *${sentinel}\\ * ) cd "\${out##*${sentinel} }" ;;`,
     '    *) printf "%s\\n" "$out" ;;',
     '  esac',
     '}',
