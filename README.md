@@ -48,6 +48,14 @@ projector open --name web --editor webstorm
 projector open --select --dry-run       # prints the command only
 ```
 
+- Manage reusable project templates:
+```sh
+projector template list                     # show built-in + user templates
+projector template apply node-service ./api # scaffold into ./api using defaults
+projector template apply --init             # interactive template + variable prompts
+projector template add --from ./scaffold --id custom-api --name "Custom API"
+```
+
 ## Interactive Actions and cd-in-place
 When run in a TTY, `projector` can show the table, then prompt to select a project and an action (open in editor, change directory, or print path). Changing the caller shell’s directory requires a tiny wrapper:
 
@@ -127,3 +135,4 @@ Precedence and prompts:
 - Architecture: `docs/architecture.md`
 - Testing: `docs/TESTING.md`
 - Configuration: `docs/config.md`
+- Templates: `docs/templates.md`

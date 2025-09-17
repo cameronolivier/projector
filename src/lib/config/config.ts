@@ -2,7 +2,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import * as os from 'os'
 import { parse, stringify } from 'yaml'
-import { ProjectsConfig, TrackingPattern, TrackingType, ColorScheme, TrackingInfo } from '../types.js'
+import { ProjectsConfig, TrackingPattern, TrackingType, ColorScheme, TrackingInfo, TemplateDefinition } from '../types.js'
 
 export class ConfigurationManager {
   private configPath: string
@@ -51,6 +51,33 @@ export class ConfigurationManager {
   }
 
   getDefaultConfig(): ProjectsConfig {
+    const configDir = path.dirname(this.getConfigPath())
+    const templatesDir = path.join(configDir, 'templates')
+    const builtinTemplates: TemplateDefinition[] = [
+      {
+        id: 'node-service',
+        name: 'Node Service',
+        description: 'Opinionated TypeScript service with pnpm + lint/test wiring',
+        tags: ['node', 'service'],
+        source: { type: 'builtin', builtinId: 'node-service' },
+        variables: [
+          { key: 'serviceName', prompt: 'Service name', required: true },
+          { key: 'description', prompt: 'Service description', default: 'Awesome service built with Projector templates' },
+        ],
+        postCommands: ['pnpm install'],
+      },
+      {
+        id: 'docs-site',
+        name: 'Docs Site',
+        description: 'Docs-first project with Docusaurus-style skeleton',
+        tags: ['docs'],
+        source: { type: 'builtin', builtinId: 'docs-site' },
+        variables: [
+          { key: 'projectName', prompt: 'Project name', required: true },
+        ],
+      },
+    ]
+
     return {
       scanDirectory: '/Users/cam/nona-mac/dev',
       maxDepth: 10,
@@ -141,6 +168,8 @@ export class ConfigurationManager {
         'samples',
         'docs/site',
       ],
+      templatesDir,
+      templates: builtinTemplates,
       colorScheme: {
         header: '#00d4ff',      // Bright cyan
         phaseStatus: '#ff6b35',  // Orange
@@ -188,8 +217,22 @@ export class ConfigurationManager {
           ? (userConfig as any).respectGitIgnore
           : defaults.respectGitIgnore,
       denylistPaths: (userConfig as any).denylistPaths || defaults.denylistPaths,
+      templatesDir: (userConfig as any).templatesDir || defaults.templatesDir,
+      templates: this.mergeTemplates(defaults.templates || [], (userConfig as any).templates || []),
       colorScheme: { ...defaults.colorScheme, ...userConfig.colorScheme },
     }
+  }
+
+  private mergeTemplates(defaults: TemplateDefinition[], overrides: TemplateDefinition[]): TemplateDefinition[] {
+    if (!overrides || overrides.length === 0) return defaults
+    const merged = new Map<string, TemplateDefinition>()
+    for (const tpl of defaults) {
+      merged.set(tpl.id, tpl)
+    }
+    for (const tpl of overrides) {
+      merged.set(tpl.id, tpl)
+    }
+    return Array.from(merged.values())
   }
 
   private getConfigPath(): string {

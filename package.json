@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx src/index.ts",
-    "build": "tsc --project tsconfig.json --outDir dist",
+    "build": "tsc --project tsconfig.json --outDir dist && node scripts/copy-templates.js",
     "clean": "rm -rf dist oclif.manifest.json",
     "link": "pnpm link --global",
     "unlink": "pnpm unlink --global",

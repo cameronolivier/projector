@@ -22,6 +22,18 @@ stopAtVcsRoot: true
 includeNestedPackages: "when-monorepo"   # one of: never | when-monorepo | always
 respectGitIgnore: false                   # reserved; may affect performance
 denylistPaths: ["examples", "fixtures", "samples", "docs/site"]
+templatesDir: "/Users/you/.config/projector/templates"
+templates:
+  - id: "node-service"
+    name: "Node Service"
+    description: "Opinionated TypeScript service skeleton"
+    source:
+      type: builtin
+      builtinId: node-service
+    variables:
+      - key: serviceName
+        prompt: "Service name"
+        required: true
 
 # Display colors (trimmed for brevity)
 colorScheme:
@@ -47,6 +59,8 @@ colorScheme:
 - includeNestedPackages: Whether to descend into monorepo package globs and include child packages.
 - respectGitIgnore: Optionally skip git-ignored paths; off by default due to cost.
 - denylistPaths: Substrings/globs to always skip (e.g., `examples`, `fixtures`).
+- templatesDir: Directory where user-managed templates are stored (created automatically).
+- templates: Template catalog combining built-ins and user entries. Each entry specifies `source.type` (`builtin` or `directory`), variables, optional tags, and post-generation commands.
 
 ## Docs-First Projects
 - A directory with a top-level `docs/` containing at least one `.md`/`.mdx` file is treated as a project root even if no code or git exists.
@@ -58,6 +72,7 @@ colorScheme:
 - lockfilesAsStrong: true
 - minCodeFilesToConsider: 5
 - rootMarkers/monorepoMarkers include common ecosystem files by default.
+- templatesDir defaults to `<config dir>/templates` with built-in templates (`node-service`, `docs-site`).
 
 ## Tips
 - Adjust `includeNestedPackages` to control monorepo depth.

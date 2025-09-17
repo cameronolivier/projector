@@ -93,6 +93,8 @@ export interface ProjectsConfig {
   includeNestedPackages?: 'never' | 'when-monorepo' | 'always'
   respectGitIgnore?: boolean
   denylistPaths?: string[]
+  templatesDir?: string
+  templates?: TemplateDefinition[]
   colorScheme: ColorScheme
 }
 
@@ -102,4 +104,26 @@ export interface ColorScheme {
   stableStatus: string
   unknownStatus: string
   projectName: string
+}
+
+export interface TemplateDefinition {
+  id: string
+  name: string
+  description?: string
+  tags?: string[]
+  source: TemplateSource
+  variables?: TemplateVariable[]
+  postCommands?: string[]
+  initGit?: boolean
+}
+
+export type TemplateSource =
+  | { type: 'builtin'; builtinId: string }
+  | { type: 'directory'; path: string }
+
+export interface TemplateVariable {
+  key: string
+  prompt: string
+  default?: string
+  required?: boolean
 }
