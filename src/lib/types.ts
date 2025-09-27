@@ -52,11 +52,49 @@ export interface PhaseInfo {
   name?: string
 }
 
+export interface GitHeadInfo {
+  sha: string
+  author: string
+  subject: string
+  committedAt: number
+}
+
+export interface GitBranchSummary {
+  name: string
+  lastCommitSha: string
+  lastCommitDate: number
+}
+
+export interface GitStaleBranchInfo {
+  total: number
+  sample: string[]
+  thresholdDays: number
+}
+
+export interface GitInsights {
+  currentBranch: string
+  head: GitHeadInfo
+  commitsInWindow: {
+    windowDays: number
+    count: number
+  }
+  commitsInShortWindow: {
+    windowDays: number
+    count: number
+  }
+  ahead?: number
+  behind?: number
+  branchSummaries: GitBranchSummary[]
+  staleBranches: GitStaleBranchInfo
+  collectedAt: number
+}
+
 export interface AnalyzedProject extends ProjectDirectory {
   status: ProjectStatus
   description: string
   trackingFiles: TrackingFile[]
   confidence: number
+  git?: GitInsights
 }
 
 export interface ScanOptions {
@@ -68,6 +106,15 @@ export interface ScanOptions {
 export interface TrackingPattern {
   pattern: string
   type: TrackingType
+}
+
+export interface GitInsightsConfig {
+  enabled: boolean
+  activityWindowDays: number
+  shortWindowDays: number
+  staleBranchThresholdDays: number
+  maxBranches: number
+  cacheTtlHours: number
 }
 
 export interface ProjectsConfig {
@@ -96,6 +143,7 @@ export interface ProjectsConfig {
   templatesDir?: string
   templates?: TemplateDefinition[]
   colorScheme: ColorScheme
+  gitInsights?: GitInsightsConfig
 }
 
 export interface ColorScheme {
@@ -126,4 +174,11 @@ export interface TemplateVariable {
   prompt: string
   default?: string
   required?: boolean
+}
+
+export interface CachedGitInsights {
+  headSha: string
+  branchFingerprint: string
+  expiresAt: number
+  insights: GitInsights
 }

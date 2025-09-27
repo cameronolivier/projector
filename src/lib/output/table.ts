@@ -2,7 +2,7 @@ import Table from 'cli-table3'
 import chalk from 'chalk'
 import * as path from 'path'
 import * as os from 'os'
-import { AnalyzedProject, ColorScheme } from '../types.js'
+import { AnalyzedProject, ColorScheme, GitInsights } from '../types.js'
 
 export class TableGenerator {
   generateTable(projects: AnalyzedProject[], colorScheme?: ColorScheme): string {
@@ -10,6 +10,7 @@ export class TableGenerator {
       head: [
         chalk.hex(colorScheme?.header || '#00d4ff').bold('📁 Project'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Status'),
+        chalk.hex(colorScheme?.header || '#00d4ff').bold('Git'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Type'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('📍 Location'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Description')
@@ -18,7 +19,7 @@ export class TableGenerator {
         head: [],
         border: ['gray']
       },
-      colWidths: [20, 15, 12, 35, 50],
+      colWidths: [20, 15, 28, 12, 32, 45],
       wordWrap: true
     })
 
@@ -43,11 +44,12 @@ export class TableGenerator {
   formatRow(project: AnalyzedProject, colorScheme?: ColorScheme): string[] {
     const projectName = chalk.hex(colorScheme?.projectName || '#ffffff')(project.name)
     const status = this.formatStatus(project.status.details, project.status.type, colorScheme)
+    const git = this.formatGit(project.git)
     const type = this.formatProjectType(project.type, project.languages)
     const location = this.formatLocation(project.path)
     const description = this.formatDescription(project.description, project.status.confidence)
 
-    return [projectName, status, type, location, description]
+    return [projectName, status, git, type, location, description]
   }
 
   private formatStatus(details: string, type: string, colorScheme?: ColorScheme): string {
@@ -129,6 +131,80 @@ export class TableGenerator {
     return cleaned
   }
 
+  private formatGit(git?: GitInsights): string {
+    if (!git) {
+      return chalk.gray('—')
+    }
+
+    const parts: string[] = []
+    parts.push(chalk.cyan(git.currentBranch))
+
+    if (git.head?.committedAt) {
+      parts.push(chalk.dim(this.formatRelativeTime(git.head.committedAt)))
+    }
+
+    if (git.commitsInWindow.count > 0) {
+      parts.push(chalk.green(`${git.commitsInWindow.count}/${git.commitsInWindow.windowDays}d`))
+    } else {
+      parts.push(chalk.gray(`0/${git.commitsInWindow.windowDays}d`))
+    }
+
+    if (typeof git.ahead === 'number' || typeof git.behind === 'number') {
+      const ahead = typeof git.ahead === 'number' && git.ahead > 0 ? `↑${git.ahead}` : ''
+      const behind = typeof git.behind === 'number' && git.behind > 0 ? `↓${git.behind}` : ''
+      const divergence = [ahead, behind].filter(Boolean).join(' ')
+      if (divergence.length > 0) {
+        parts.push(chalk.hex('#f0ad4e')(divergence))
+      }
+    }
+
+    if (git.staleBranches.total > 0) {
+      const label = git.staleBranches.total === 1 ? 'stale branch' : 'stale branches'
+      parts.push(chalk.hex('#ff6b35')(`${git.staleBranches.total} ${label}`))
+    }
+
+    return parts.join(chalk.dim(' • '))
+  }
+
+  private formatRelativeTime(timestamp: number): string {
+    if (!timestamp) {
+      return '—'
+    }
+
+    const diff = Date.now() - timestamp
+    if (diff < 0) {
+      return '—'
+    }
+
+    const minute = 60 * 1000
+    const hour = 60 * minute
+    const day = 24 * hour
+    const month = 30 * day
+    const year = 365 * day
+
+    if (diff < minute) {
+      return 'just now'
+    }
+    if (diff < hour) {
+      const minutes = Math.round(diff / minute)
+      return `${minutes}m ago`
+    }
+    if (diff < day) {
+      const hours = Math.round(diff / hour)
+      return `${hours}h ago`
+    }
+    if (diff < month) {
+      const days = Math.round(diff / day)
+      return `${days}d ago`
+    }
+    if (diff < year) {
+      const months = Math.round(diff / month)
+      return `${months}mo ago`
+    }
+    const years = Math.round(diff / year)
+    return `${years}y ago`
+  }
+
   private cleanDescription(description: string): string {
     // Remove HTML tags
     let cleaned = description.replace(/<[^>]*>/g, '')
@@ -162,6 +238,10 @@ export class TableGenerator {
       acc[project.status.type] = (acc[project.status.type] || 0) + 1
       return acc
     }, {} as Record<string, number>)
+    const gitEnabledCount = projects.filter(p => p.git).length
+    const gitStaleCount = projects.filter(p => p.git && p.git.staleBranches.total > 0).length
+    const gitQuietCount = projects.filter(p => p.git && p.git.commitsInWindow.count === 0).length
+    const gitWindow = projects.find(p => p.git)?.git?.commitsInWindow.windowDays
 
     const summaryParts = []
     summaryParts.push(chalk.bold(`Found ${total} projects`))
@@ -182,6 +262,18 @@ export class TableGenerator {
       summaryParts.push(chalk.gray(`${byType.unknown} unknown`))
     }
 
+    if (gitEnabledCount > 0) {
+      summaryParts.push(chalk.cyan(`${gitEnabledCount} git-enabled`))
+    }
+
+    if (gitStaleCount > 0) {
+      summaryParts.push(chalk.hex('#ff6b35')(`${gitStaleCount} with stale branches`))
+    }
+
+    if (gitQuietCount > 0 && gitWindow) {
+      summaryParts.push(chalk.gray(`${gitQuietCount} no commits ${gitWindow}d`))
+    }
+
     return summaryParts.join(', ')
   }
 
@@ -192,8 +284,50 @@ export class TableGenerator {
       const status = this.getStatusIcon(project.status.type)
       const name = chalk.bold(project.name)
       const details = chalk.dim(project.status.details)
-      
-      lines.push(`${status} ${name} - ${details}`)
+      let git = ''
+      if (project.git) {
+        git = chalk.dim(` [${project.git.currentBranch}, ${project.git.commitsInWindow.count}/${project.git.commitsInWindow.windowDays}d]`)
+      }
+
+      lines.push(`${status} ${name} - ${details}${git}`)
+    }
+
+    return lines.join('\\n')
+  }
+
+  generateGitDetails(projects: AnalyzedProject[]): string | null {
+    const gitProjects = projects.filter(p => p.git)
+    if (gitProjects.length === 0) {
+      return null
+    }
+
+    const sortedByRecent = [...gitProjects]
+      .sort((a, b) => (b.git!.head?.committedAt || 0) - (a.git!.head?.committedAt || 0))
+      .slice(0, 5)
+
+    const recentLines = sortedByRecent.map(project => {
+      const git = project.git!
+      const rel = git.head?.committedAt ? this.formatRelativeTime(git.head.committedAt) : 'n/a'
+      const commits = `${git.commitsInWindow.count}/${git.commitsInWindow.windowDays}d`
+      const stale = git.staleBranches.total > 0 ? `, ${git.staleBranches.total} stale` : ''
+      return `  • ${project.name}: ${git.currentBranch} — ${rel}, ${commits}${stale}`
+    })
+
+    const staleProjects = gitProjects
+      .filter(p => p.git!.staleBranches.total > 0)
+      .slice(0, 5)
+
+    const lines: string[] = []
+    lines.push(chalk.bold('Git insights'))
+    lines.push(...recentLines)
+
+    if (staleProjects.length > 0) {
+      lines.push(chalk.hex('#ff6b35')('  • Stale branches:'))
+      for (const project of staleProjects) {
+        const git = project.git!
+        const names = git.staleBranches.sample.length > 0 ? ` (${git.staleBranches.sample.join(', ')})` : ''
+        lines.push(chalk.hex('#ff6b35')(`    - ${project.name}: ${git.staleBranches.total}${names}`))
+      }
     }
 
     return lines.join('\\n')

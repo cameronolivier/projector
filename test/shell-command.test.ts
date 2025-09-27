@@ -69,12 +69,23 @@ describe('shell command - install/remove/dry-run', () => {
   const mockChalk = () => {
     jest.doMock('chalk', () => ({
       __esModule: true,
-      default: {
-        gray: (s: string) => s,
-        green: (s: string) => s,
-        cyan: (s: string) => s,
-        yellow: (s: string) => s,
-      },
+      default: (() => {
+        const passthrough = (s: string) => s
+        const hex = () => {
+          const fn = (s: string) => s
+          ;(fn as any).bold = (s: string) => s
+          return fn
+        }
+        return {
+          gray: passthrough,
+          green: passthrough,
+          cyan: passthrough,
+          yellow: passthrough,
+          bold: passthrough,
+          dim: passthrough,
+          hex,
+        }
+      })(),
     }))
   }
 

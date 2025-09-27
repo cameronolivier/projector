@@ -81,6 +81,14 @@ describe('list command - interactive flow', () => {
       __esModule: true,
       TableGenerator: jest.fn().mockImplementation(() => ({
         generateTable: () => 'TABLE',
+        generateSummary: () => 'SUMMARY',
+        generateGitDetails: () => null,
+      })),
+    }))
+    jest.doMock('../src/lib/git/analyzer', () => ({
+      __esModule: true,
+      GitAnalyzer: jest.fn().mockImplementation(() => ({
+        collect: async () => null,
       })),
     }))
     jest.doMock('../src/lib/cache/manager', () => ({
@@ -89,6 +97,7 @@ describe('list command - interactive flow', () => {
         clearCache: async () => {},
         getCachedProject: async () => null,
         setCachedProject: async () => {},
+        updateGitInsights: async () => {},
         getStats: () => ({ totalProjects: 0, cacheHits: 0, cacheMisses: 0, invalidated: 0, cacheHitRate: 0 }),
       })),
     }))
@@ -105,6 +114,7 @@ describe('list command - interactive flow', () => {
           defaultInteractive: true,
           defaultEditor: opts?.defaultEditor,
           cdSentinel: '__PROJECTOR_CD__',
+          gitInsights: { enabled: false, activityWindowDays: 30, shortWindowDays: 7, staleBranchThresholdDays: 90, maxBranches: 5, cacheTtlHours: 6 },
         }),
       })),
     }))

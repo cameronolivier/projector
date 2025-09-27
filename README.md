@@ -56,6 +56,18 @@ projector template apply --init             # interactive template + variable pr
 projector template add --from ./scaffold --id custom-api --name "Custom API"
 ```
 
+## Git Insights
+- `projector list` surfaces per-repo git activity: current branch, last commit age, commits in the configured window, upstream divergence, and stale branch counts. The table gains a `Git` column and verbose mode prints a breakdown of recent activity plus stale branches.
+
+- Toggle at runtime:
+```sh
+projector list --git-insights        # force enable (overrides config)
+projector list --no-git-insights     # skip git work for this run
+projector list --verbose             # include expanded git summary block
+```
+
+- Configure defaults via the `gitInsights` block in `~/.config/projector/config.yaml` (see `docs/config.md`).
+
 ## Interactive Actions and cd-in-place
 When run in a TTY, `projector` can show the table, then prompt to select a project and an action (open in editor, change directory, or print path). Changing the caller shell’s directory requires a tiny wrapper:
 

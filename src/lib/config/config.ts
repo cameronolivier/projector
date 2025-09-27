@@ -2,7 +2,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import * as os from 'os'
 import { parse, stringify } from 'yaml'
-import { ProjectsConfig, TrackingPattern, TrackingType, ColorScheme, TrackingInfo, TemplateDefinition } from '../types.js'
+import { ProjectsConfig, TrackingPattern, TrackingType, ColorScheme, TrackingInfo, TemplateDefinition, GitInsightsConfig } from '../types.js'
 
 export class ConfigurationManager {
   private configPath: string
@@ -177,6 +177,7 @@ export class ConfigurationManager {
         unknownStatus: '#9e9e9e', // Gray
         projectName: '#ffffff',  // White
       },
+      gitInsights: this.getDefaultGitInsightsConfig(),
     }
   }
 
@@ -220,6 +221,7 @@ export class ConfigurationManager {
       templatesDir: (userConfig as any).templatesDir || defaults.templatesDir,
       templates: this.mergeTemplates(defaults.templates || [], (userConfig as any).templates || []),
       colorScheme: { ...defaults.colorScheme, ...userConfig.colorScheme },
+      gitInsights: this.mergeGitInsights(defaults.gitInsights, (userConfig as any).gitInsights),
     }
   }
 
@@ -233,6 +235,40 @@ export class ConfigurationManager {
       merged.set(tpl.id, tpl)
     }
     return Array.from(merged.values())
+  }
+
+  private getDefaultGitInsightsConfig(): GitInsightsConfig {
+    return {
+      enabled: true,
+      activityWindowDays: 30,
+      shortWindowDays: 7,
+      staleBranchThresholdDays: 90,
+      maxBranches: 5,
+      cacheTtlHours: 6,
+    }
+  }
+
+  private mergeGitInsights(defaults?: GitInsightsConfig, overrides?: Partial<GitInsightsConfig>): GitInsightsConfig | undefined {
+    if (!defaults && !overrides) {
+      return undefined
+    }
+
+    if (!defaults) {
+      return overrides as GitInsightsConfig
+    }
+
+    if (!overrides) {
+      return defaults
+    }
+
+    return {
+      enabled: typeof overrides.enabled === 'boolean' ? overrides.enabled : defaults.enabled,
+      activityWindowDays: overrides.activityWindowDays || defaults.activityWindowDays,
+      shortWindowDays: overrides.shortWindowDays || defaults.shortWindowDays,
+      staleBranchThresholdDays: overrides.staleBranchThresholdDays || defaults.staleBranchThresholdDays,
+      maxBranches: overrides.maxBranches || defaults.maxBranches,
+      cacheTtlHours: overrides.cacheTtlHours || defaults.cacheTtlHours,
+    }
   }
 
   private getConfigPath(): string {

@@ -42,6 +42,15 @@ colorScheme:
   stableStatus: "#4caf50"
   unknownStatus: "#9e9e9e"
   projectName: "#ffffff"
+
+# Git insights
+gitInsights:
+  enabled: true
+  activityWindowDays: 30
+  shortWindowDays: 7
+  staleBranchThresholdDays: 90
+  maxBranches: 5
+  cacheTtlHours: 6
 ```
 
 ## Field Reference
@@ -61,6 +70,7 @@ colorScheme:
 - denylistPaths: Substrings/globs to always skip (e.g., `examples`, `fixtures`).
 - templatesDir: Directory where user-managed templates are stored (created automatically).
 - templates: Template catalog combining built-ins and user entries. Each entry specifies `source.type` (`builtin` or `directory`), variables, optional tags, and post-generation commands.
+- gitInsights: Controls git analysis. `enabled` toggles collection; `activityWindowDays`/`shortWindowDays` drive commit counts, `staleBranchThresholdDays` marks inactive branches, `maxBranches` limits branch summaries, and `cacheTtlHours` sets refresh cadence.
 
 ## Docs-First Projects
 - A directory with a top-level `docs/` containing at least one `.md`/`.mdx` file is treated as a project root even if no code or git exists.
@@ -73,6 +83,7 @@ colorScheme:
 - minCodeFilesToConsider: 5
 - rootMarkers/monorepoMarkers include common ecosystem files by default.
 - templatesDir defaults to `<config dir>/templates` with built-in templates (`node-service`, `docs-site`).
+- gitInsights defaults to enabled, counts commits over 30/7-day windows, flags branches stale after 90 days, samples 5 branches, and refreshes every 6 hours.
 
 ## Tips
 - Adjust `includeNestedPackages` to control monorepo depth.

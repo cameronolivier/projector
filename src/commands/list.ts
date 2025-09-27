@@ -8,6 +8,8 @@ import { CacheManager } from '../lib/cache/manager.js'
 import inquirer from 'inquirer'
 import { defaultEditorFromEnv, supportedEditors, buildEditorCommand, isGuiEditor, type EditorId } from '../lib/commands/open-utils.js'
 import { spawn } from 'child_process'
+import { GitAnalyzer } from '../lib/git/analyzer.js'
+import type { CachedGitInsights } from '../lib/types.js'
 
 export default class List extends Command {
   static override description = 'Discover and analyze development projects with intelligent scanning and status tracking'
@@ -82,6 +84,11 @@ export default class List extends Command {
       description: 'Disable interactive prompts even in a TTY',
       default: false,
     }),
+    'git-insights': Flags.boolean({
+      description: 'Enable git insight collection for this run (use --no-git-insights to disable)',
+      allowNo: true,
+      default: undefined,
+    }),
   }
 
   async run(): Promise<void> {
@@ -110,6 +117,12 @@ export default class List extends Command {
       const analyzer = new TrackingAnalyzer(config.trackingPatterns)
       const tableGenerator = new TableGenerator()
       const cacheManager = new CacheManager()
+      const gitAnalyzer = new GitAnalyzer()
+      const gitConfig = config.gitInsights
+      let gitInsightsEnabled = Boolean(gitConfig?.enabled)
+      if (typeof flags['git-insights'] === 'boolean') {
+        gitInsightsEnabled = flags['git-insights']
+      }
       
       // Handle cache clearing
       if (flags['clear-cache']) {
@@ -149,7 +162,27 @@ export default class List extends Command {
           if (flags.verbose) {
             this.log(`📋 Using cached data for ${directory.name} ${progress}`)
           }
-          
+
+          let gitInsights = undefined
+          if (gitInsightsEnabled && gitConfig && cachedData.hasGit) {
+            try {
+              const gitResult = await gitAnalyzer.collect(directory.path, gitConfig, cachedData.git)
+              if (gitResult) {
+                gitInsights = gitResult.insights
+                if (!flags['no-cache'] && (!cachedData.git || gitResult.cache !== cachedData.git)) {
+                  await cacheManager.updateGitInsights(directory, gitResult.cache)
+                }
+              } else if (cachedData.git?.insights) {
+                gitInsights = cachedData.git.insights
+              }
+            } catch (error) {
+              if (flags.verbose) {
+                this.warn(`⚠️  Failed to collect git insights for ${directory.name}: ${error instanceof Error ? error.message : String(error)}`)
+              }
+              gitInsights = cachedData.git?.insights
+            }
+          }
+
           projects.push({
             ...directory,
             type: detector.detectProjectType(directory), // Detect type since we don't cache it
@@ -159,26 +192,27 @@ export default class List extends Command {
             description: cachedData.description,
             trackingFiles: [],
             confidence: cachedData.status.confidence,
+            git: gitInsights,
           })
-          
+
         } else {
           // Fresh analysis
           if (flags.verbose || totalCount > 5) {
             this.log(`🔍 Analyzing ${directory.name} ${progress}`)
           }
-          
+
           // Detect project type
           const projectType = detector.detectProjectType(directory)
           const languages = detector.detectLanguages(directory)
           const hasGit = detector.hasGitRepository(directory)
-          
+
           // Analyze tracking status
           const status = await analyzer.analyzeProject(directory)
           const trackingFiles = await analyzer.detectTrackingFiles(directory)
-          
+
           // Extract description from various sources
           let description = config.descriptions[directory.name] || 'No description available'
-          
+
           // Try to get description from tracking files if available
           for (const trackingFile of trackingFiles) {
             if (trackingFile.content.description) {
@@ -186,7 +220,23 @@ export default class List extends Command {
               break
             }
           }
-          
+
+          let gitCache: CachedGitInsights | undefined
+          let gitInsights = undefined
+          if (gitInsightsEnabled && gitConfig && hasGit) {
+            try {
+              const gitResult = await gitAnalyzer.collect(directory.path, gitConfig)
+              if (gitResult) {
+                gitCache = gitResult.cache
+                gitInsights = gitResult.insights
+              }
+            } catch (error) {
+              if (flags.verbose) {
+                this.warn(`⚠️  Failed to collect git insights for ${directory.name}: ${error instanceof Error ? error.message : String(error)}`)
+              }
+            }
+          }
+
           // Cache the results for next time
           if (!flags['no-cache']) {
             await cacheManager.setCachedProject(
@@ -195,10 +245,11 @@ export default class List extends Command {
               description,
               trackingFiles,
               languages,
-              hasGit
+              hasGit,
+              gitCache
             )
           }
-          
+
           projects.push({
             ...directory,
             type: projectType,
@@ -208,6 +259,7 @@ export default class List extends Command {
             description,
             trackingFiles: [],
             confidence: status.confidence,
+            git: gitInsights,
           })
         }
       }
@@ -225,12 +277,19 @@ export default class List extends Command {
       }
 
       // Display summary with cache stats unless suppressed
-      const withTracking = projects.filter(p => p.status.type !== 'unknown').length
-      const total = projects.length
       const cacheStats = cacheManager.getStats()
 
       if (!suppressOutput) {
-        this.log(`\nFound ${total} projects (${withTracking} with tracking, ${total - withTracking} unknown)`)
+        this.log(`\n${tableGenerator.generateSummary(projects)}`)
+
+        if (gitInsightsEnabled && flags.verbose) {
+          const gitDetail = tableGenerator.generateGitDetails(projects)
+          if (gitDetail) {
+            this.log('')
+            this.log(gitDetail)
+          }
+        }
+
         if (flags.verbose && cacheStats.totalProjects > 0) {
           this.log(`Cache: ${cacheStats.cacheHits} hits, ${cacheStats.cacheMisses} misses, ${cacheStats.invalidated} invalidated (${Math.round(cacheStats.cacheHitRate * 100)}% hit rate)`)
         }

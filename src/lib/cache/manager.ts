@@ -2,7 +2,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import * as os from 'os'
 import * as crypto from 'crypto'
-import { ProjectDirectory, ProjectStatus, TrackingFile } from '../types.js'
+import { CachedGitInsights, ProjectDirectory, ProjectStatus, TrackingFile } from '../types.js'
 
 export interface CachedProjectData {
   projectPath: string
@@ -19,6 +19,7 @@ export interface CachedProjectData {
   languages: string[]
   hasGit: boolean
   cachedAt: number
+  git?: CachedGitInsights
 }
 
 export interface CacheStats {
@@ -100,7 +101,8 @@ export class CacheManager {
     description: string,
     trackingFiles: TrackingFile[],
     languages: string[],
-    hasGit: boolean
+    hasGit: boolean,
+    git?: CachedGitInsights
   ): Promise<void> {
     try {
       await this.ensureCacheDir()
@@ -123,7 +125,8 @@ export class CacheManager {
         })),
         languages,
         hasGit,
-        cachedAt: Date.now()
+        cachedAt: Date.now(),
+        git
       }
 
       await fs.writeFile(cacheFile, JSON.stringify(cached, null, 2), 'utf-8')
@@ -131,6 +134,19 @@ export class CacheManager {
     } catch (error) {
       // Cache write failure shouldn't break the application
       console.warn(`Failed to cache project ${directory.name}: ${error}`)
+    }
+  }
+
+  async updateGitInsights(directory: ProjectDirectory, git: CachedGitInsights): Promise<void> {
+    try {
+      await this.ensureCacheDir()
+      const cacheFile = this.getCacheFilePath(directory.path)
+      const content = await fs.readFile(cacheFile, 'utf-8')
+      const cached: CachedProjectData = JSON.parse(content)
+      cached.git = git
+      await fs.writeFile(cacheFile, JSON.stringify(cached, null, 2), 'utf-8')
+    } catch (error) {
+      // Ignore update failures; cache will refresh on next full analysis
     }
   }
 
