@@ -40,7 +40,17 @@ A dedicated Progress column will:
 
 ### Progress Display Formats
 
-**Option 1 - Fraction (Recommended)**:
+**Option 1 - Fraction + Percentage (Recommended)**:
+```
+Progress
+--------
+15/20 (75%)
+3/5 (60%)
+12/15 (80%)
+—
+```
+
+**Option 2 - Fraction Only**:
 ```
 Progress
 --------
@@ -50,7 +60,7 @@ Progress
 —
 ```
 
-**Option 2 - Percentage**:
+**Option 3 - Percentage Only**:
 ```
 Progress
 --------
@@ -60,7 +70,7 @@ Progress
 —
 ```
 
-**Option 3 - Progress Bar**:
+**Option 4 - Progress Bar + Percentage**:
 ```
 Progress
 --------
@@ -70,17 +80,17 @@ Progress
 —
 ```
 
-**Option 4 - Combined (Fraction + Bar)**:
+**Option 5 - Full Combined (Fraction + Percentage + Bar)**:
 ```
 Progress
 --------
-15/20 ███████▓
-3/5   ███▓▓▓▓▓
-12/15 ████████
+15/20 (75%) ███████▓
+3/5 (60%)   ███▓▓▓▓▓
+12/15 (80%) ████████
 —
 ```
 
-Recommendation: **Option 1 (Fraction)** for clarity, with **Option 4 (Combined)** as configurable enhancement.
+Recommendation: **Option 1 (Fraction + Percentage)** - provides both absolute numbers and quick mental reference.
 
 ### Column Visibility by Status
 
@@ -88,8 +98,8 @@ Recommendation: **Option 1 (Fraction)** for clarity, with **Option 4 (Combined)*
 |-------------|----------------|---------|
 | unknown | No | `—` |
 | planning | No | `—` |
-| **in-progress** | **Yes** | `3/5` |
-| **feature-complete** | **Yes** | `5/5` |
+| **in-progress** | **Yes** | `3/5 (60%)` |
+| **feature-complete** | **Yes** | `5/5 (100%)` |
 | stable | No | `—` |
 | archived | No | `—` |
 
@@ -156,7 +166,8 @@ interface ProjectsConfig {
   // ... existing fields
   progress?: {
     enabled: boolean              // default: true
-    format: 'fraction' | 'percentage' | 'bar' | 'combined'  // default: 'fraction'
+    format: 'fraction-percent' | 'fraction' | 'percentage' | 'bar' | 'full'
+    // default: 'fraction-percent'
     showForStatus: string[]       // default: ['in-progress', 'feature-complete']
     barLength: number             // default: 10 (chars for bar)
     emptyIndicator: string        // default: '—'
@@ -168,7 +179,7 @@ Default config:
 ```yaml
 progress:
   enabled: true
-  format: fraction
+  format: fraction-percent  # Shows "X/Y (Z%)"
   showForStatus:
     - in-progress
     - feature-complete
@@ -192,7 +203,7 @@ generateTable(projects: AnalyzedProject[], colorScheme?: ColorScheme): string {
       chalk.bold('📍 Location'),
       chalk.bold('Description')
     ],
-    colWidths: [20, 15, 12, 28, 12, 32, 40],  // Adjusted widths
+    colWidths: [20, 15, 14, 28, 12, 32, 38],  // Progress: 14 for "X/Y (100%)"
     // ...
   })
 
@@ -237,6 +248,9 @@ private formatProgress(project: AnalyzedProject): string {
   const { current, total } = progress
 
   switch (config.format) {
+    case 'fraction-percent':
+      return this.formatFractionPercent(current, total)
+
     case 'fraction':
       return this.formatFraction(current, total)
 
@@ -246,11 +260,11 @@ private formatProgress(project: AnalyzedProject): string {
     case 'bar':
       return this.formatBar(current, total, config.barLength)
 
-    case 'combined':
-      return this.formatCombined(current, total, config.barLength)
+    case 'full':
+      return this.formatFull(current, total, config.barLength)
 
     default:
-      return this.formatFraction(current, total)
+      return this.formatFractionPercent(current, total)
   }
 }
 
@@ -265,6 +279,21 @@ private extractProgress(project: AnalyzedProject): { current: number; total: num
     }
   }
   return null
+}
+
+private formatFractionPercent(current: number, total: number): string {
+  const percent = Math.round((current / total) * 100)
+  const fraction = `${current}/${total}`
+  const percentText = `(${percent}%)`
+
+  // Color code based on completion
+  if (percent >= 90) {
+    return chalk.green(`${fraction} ${percentText}`)
+  } else if (percent >= 50) {
+    return chalk.yellow(`${fraction} ${percentText}`)
+  } else {
+    return chalk.cyan(`${fraction} ${percentText}`)
+  }
 }
 
 private formatFraction(current: number, total: number): string {
@@ -298,20 +327,25 @@ private formatBar(current: number, total: number, barLength: number): string {
   const empty = barLength - filled
 
   const bar = '█'.repeat(filled) + '▓'.repeat(empty)
+  const percentText = `${Math.round(percent * 100)}%`
 
   if (percent >= 0.9) {
-    return chalk.green(bar)
+    return chalk.green(`${bar} ${percentText}`)
   } else if (percent >= 0.5) {
-    return chalk.yellow(bar)
+    return chalk.yellow(`${bar} ${percentText}`)
   } else {
-    return chalk.cyan(bar)
+    return chalk.cyan(`${bar} ${percentText}`)
   }
 }
 
-private formatCombined(current: number, total: number, barLength: number): string {
-  const fraction = this.formatFraction(current, total)
+private formatFull(current: number, total: number, barLength: number): string {
+  const percent = Math.round((current / total) * 100)
+  const fraction = `${current}/${total}`
+  const percentText = `(${percent}%)`
   const bar = this.formatBar(current, total, barLength)
-  return `${fraction} ${bar}`
+
+  // Return without extra color - formatBar already colors the bar
+  return `${fraction} ${percentText} ${bar}`
 }
 ```
 
@@ -392,28 +426,41 @@ describe('Progress Column', () => {
     expect(formatted).toBe('—')
   })
 
-  test('formats as percentage', () => {
+  test('formats as fraction-percent (default)', () => {
+    const formatted = formatFractionPercent(3, 4)
+    expect(formatted).toContain('3/4 (75%)')
+  })
+
+  test('formats as percentage only', () => {
     const formatted = formatPercentage(3, 4)
     expect(formatted).toContain('75%')
   })
 
-  test('formats as bar', () => {
+  test('formats as bar with percentage', () => {
     const formatted = formatBar(7, 10, 10)
     expect(formatted).toMatch(/█{7}▓{3}/)
+    expect(formatted).toContain('70%')
+  })
+
+  test('formats as full combined', () => {
+    const formatted = formatFull(3, 4, 10)
+    expect(formatted).toContain('3/4')
+    expect(formatted).toContain('(75%)')
+    expect(formatted).toMatch(/█/)
   })
 
   test('colors based on completion', () => {
     // 90%+ = green
-    const high = formatFraction(9, 10)
-    expect(high).toContain(chalk.green('9/10'))
+    const high = formatFractionPercent(9, 10)
+    expect(high).toContain(chalk.green('9/10 (90%)'))
 
     // 50-89% = yellow
-    const mid = formatFraction(6, 10)
-    expect(mid).toContain(chalk.yellow('6/10'))
+    const mid = formatFractionPercent(6, 10)
+    expect(mid).toContain(chalk.yellow('6/10 (60%)'))
 
     // <50% = cyan
-    const low = formatFraction(2, 10)
-    expect(low).toContain(chalk.cyan('2/10'))
+    const low = formatFractionPercent(2, 10)
+    expect(low).toContain(chalk.cyan('2/10 (20%)'))
   })
 })
 ```
@@ -433,14 +480,16 @@ describe('Progress Column', () => {
 - [ ] Progress column appears in table between Status and Git columns
 - [ ] Progress shows for in-progress and feature-complete projects
 - [ ] Progress hidden (shows —) for other status types
-- [ ] Fraction format shows "X/Y" with color coding
-- [ ] Percentage format shows "N%" when configured
-- [ ] Bar format shows visual progress bar when configured
-- [ ] Combined format shows both fraction and bar
+- [ ] Default format shows "X/Y (Z%)" with both fraction and percentage
+- [ ] Fraction-only format shows "X/Y" when configured
+- [ ] Percentage-only format shows "N%" when configured
+- [ ] Bar format shows visual progress bar with percentage when configured
+- [ ] Full format shows fraction, percentage, and bar when configured
 - [ ] Colors: green (90%+), yellow (50-89%), cyan (<50%)
 - [ ] Configuration options work as documented
 - [ ] No progress data shows empty indicator (—)
 - [ ] Table alignment remains clean with new column
+- [ ] Column width accommodates "X/Y (100%)" format
 - [ ] Tests cover all formats and edge cases
 
 ## Risks & Mitigations
