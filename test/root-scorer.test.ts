@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises'
 import { RootSignalScorer } from '../src/lib/discovery/root-scorer'
 import { ProjectsConfig } from '../src/lib/types'
+import { DEFAULT_TAG_PALETTE } from '../src/lib/tags/palette'
 
 jest.mock('fs/promises', () => {
   let tree = new Map<string, { files: string[]; dirs: string[]; fileContents?: Record<string, string> }>()
@@ -53,6 +54,7 @@ const baseConfig: ProjectsConfig = {
   includeNestedPackages: 'when-monorepo',
   respectGitIgnore: false,
   denylistPaths: [],
+  tags: { enabled: true, style: 'badge', maxLength: 12, colorPalette: DEFAULT_TAG_PALETTE },
   colorScheme: { header: '', phaseStatus: '', stableStatus: '', unknownStatus: '', projectName: '' },
 }
 
@@ -85,4 +87,3 @@ describe('RootSignalScorer', () => {
     expect(globs).toContain('packages/*')
   })
 })
-

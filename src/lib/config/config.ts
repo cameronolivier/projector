@@ -2,7 +2,8 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import * as os from 'os'
 import { parse, stringify } from 'yaml'
-import { ProjectsConfig, TrackingPattern, TrackingType, ColorScheme, TrackingInfo, TemplateDefinition, GitInsightsConfig } from '../types.js'
+import { ProjectsConfig, TrackingPattern, TrackingType, ColorScheme, TrackingInfo, TemplateDefinition, GitInsightsConfig, TagConfig } from '../types.js'
+import { DEFAULT_TAG_PALETTE } from '../tags/palette.js'
 
 export class ConfigurationManager {
   private configPath: string
@@ -170,6 +171,12 @@ export class ConfigurationManager {
       ],
       templatesDir,
       templates: builtinTemplates,
+      tags: {
+        enabled: true,
+        style: 'badge',
+        maxLength: 12,
+        colorPalette: DEFAULT_TAG_PALETTE.map(color => ({ ...color })),
+      },
       colorScheme: {
         header: '#00d4ff',      // Bright cyan
         phaseStatus: '#ff6b35',  // Orange
@@ -220,6 +227,7 @@ export class ConfigurationManager {
       denylistPaths: (userConfig as any).denylistPaths || defaults.denylistPaths,
       templatesDir: (userConfig as any).templatesDir || defaults.templatesDir,
       templates: this.mergeTemplates(defaults.templates || [], (userConfig as any).templates || []),
+      tags: this.mergeTags(defaults.tags, (userConfig as any).tags),
       colorScheme: { ...defaults.colorScheme, ...userConfig.colorScheme },
       gitInsights: this.mergeGitInsights(defaults.gitInsights, (userConfig as any).gitInsights),
     }
@@ -245,6 +253,29 @@ export class ConfigurationManager {
       staleBranchThresholdDays: 90,
       maxBranches: 5,
       cacheTtlHours: 6,
+    }
+  }
+
+  private mergeTags(defaults: TagConfig, overrides?: Partial<TagConfig>): TagConfig {
+    if (!overrides) {
+      return {
+        enabled: defaults.enabled,
+        style: defaults.style,
+        maxLength: defaults.maxLength,
+        colorPalette: defaults.colorPalette.map(color => ({ ...color })),
+      }
+    }
+
+    const palette =
+      overrides.colorPalette && overrides.colorPalette.length > 0
+        ? overrides.colorPalette.map(color => ({ ...color }))
+        : defaults.colorPalette.map(color => ({ ...color }))
+
+    return {
+      enabled: typeof overrides.enabled === 'boolean' ? overrides.enabled : defaults.enabled,
+      style: overrides.style || defaults.style,
+      maxLength: overrides.maxLength || defaults.maxLength,
+      colorPalette: palette,
     }
   }
 

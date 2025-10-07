@@ -24,6 +24,7 @@ export interface ProjectDirectory {
   hasGit: boolean
   files: string[]
   lastModified: Date
+  tag?: string
 }
 
 export interface ProjectStatus {
@@ -95,6 +96,7 @@ export interface AnalyzedProject extends ProjectDirectory {
   trackingFiles: TrackingFile[]
   confidence: number
   git?: GitInsights
+  tag?: string
 }
 
 export interface ScanOptions {
@@ -144,6 +146,7 @@ export interface ProjectsConfig {
   templates?: TemplateDefinition[]
   colorScheme: ColorScheme
   gitInsights?: GitInsightsConfig
+  tags: TagConfig
 }
 
 export interface ColorScheme {
@@ -152,6 +155,18 @@ export interface ColorScheme {
   stableStatus: string
   unknownStatus: string
   projectName: string
+}
+
+export interface TagColor {
+  foreground: string
+  background: string
+}
+
+export interface TagConfig {
+  enabled: boolean
+  style: 'badge' | 'inline' | 'suffix'
+  maxLength: number
+  colorPalette: TagColor[]
 }
 
 export interface TemplateDefinition {

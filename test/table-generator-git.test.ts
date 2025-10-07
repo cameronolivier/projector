@@ -6,11 +6,17 @@ jest.mock('chalk', () => {
     fn.bold = (value: string) => value
     return fn
   }
+  const bgHex = () => {
+    const fn = ((value: string) => value) as any
+    fn.hex = () => ((value: string) => value)
+    return fn
+  }
 
   return {
     __esModule: true,
     default: Object.assign(passthrough, {
       hex,
+      bgHex,
       gray: (value: string) => value,
       dim: (value: string) => value,
       bold: (value: string) => value,

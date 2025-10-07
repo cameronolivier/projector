@@ -1,4 +1,4 @@
-status: pending
+status: done
 
 # 0014 Parent Directory Tags with Color Schemes — Plan
 
@@ -304,3 +304,9 @@ describe('Tag Color Assignment', () => {
 - No performance degradation (tag extraction is O(1) per project)
 - Positive user feedback on visual organization
 - No regressions in existing table output or alignment
+
+## Completion Notes
+- Derived parent directory tags via `deriveParentTag`, surfacing them in the list command with cached and fresh analyses.
+- Added configurable tag badges (enabled/style/maxLength/palette) and documented defaults in `docs/config.md`.
+- Updated table generation to render colored badges, respecting config styles and truncation while keeping alignment intact.
+- Tests: `corepack pnpm test -- table-generator-git`.

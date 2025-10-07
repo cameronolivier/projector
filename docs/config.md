@@ -35,6 +35,16 @@ templates:
         prompt: "Service name"
         required: true
 
+tags:
+  enabled: true
+  style: badge          # badge | inline | suffix
+  maxLength: 12
+  colorPalette:
+    - foreground: "#082032"
+      background: "#61dafb"
+    - foreground: "#1b1b1b"
+      background: "#ffd54f"
+
 # Display colors (trimmed for brevity)
 colorScheme:
   header: "#00d4ff"
@@ -70,6 +80,7 @@ gitInsights:
 - denylistPaths: Substrings/globs to always skip (e.g., `examples`, `fixtures`).
 - templatesDir: Directory where user-managed templates are stored (created automatically).
 - templates: Template catalog combining built-ins and user entries. Each entry specifies `source.type` (`builtin` or `directory`), variables, optional tags, and post-generation commands.
+- tags: Controls parent directory badge display. `enabled` toggles tags globally, `style` selects layout (`badge`, `inline`, `suffix`), `maxLength` truncates long folder names, and `colorPalette` provides foreground/background color pairs (hex).
 - gitInsights: Controls git analysis. `enabled` toggles collection; `activityWindowDays`/`shortWindowDays` drive commit counts, `staleBranchThresholdDays` marks inactive branches, `maxBranches` limits branch summaries, and `cacheTtlHours` sets refresh cadence.
 
 ## Docs-First Projects
@@ -83,9 +94,11 @@ gitInsights:
 - minCodeFilesToConsider: 5
 - rootMarkers/monorepoMarkers include common ecosystem files by default.
 - templatesDir defaults to `<config dir>/templates` with built-in templates (`node-service`, `docs-site`).
+- tags default to enabled badge-style labels derived from parent directories with a curated 10-color palette and `maxLength` 12.
 - gitInsights defaults to enabled, counts commits over 30/7-day windows, flags branches stale after 90 days, samples 5 branches, and refreshes every 6 hours.
 
 ## Tips
 - Adjust `includeNestedPackages` to control monorepo depth.
 - Use `denylistPaths` to silence noisy folders globally.
+- Disable tag badges quickly with `tags.enabled: false` or switch to `inline` style if your terminal theme dislikes background colors.
 - Keep `ignorePatterns` lean for performance; prefer stronger markers when possible.

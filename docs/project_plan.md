@@ -302,10 +302,65 @@ Each phase requires:
 - [ ] Table alignment remains clean
 - [ ] No performance impact
 
-#### Planned Features (Phase 5 - Remaining)
-- [ ] move the 'git' (lightning for tracked project) into the bottom line of the project name as a 'badges' like the github README style badges - but for useful information on the app
-- [ ] add a last edited column.
-- [ ] add an interactive listing of projects to allow for 'actions' to be taken on the listing - initially to set ignored projects, but this will grow in future features.
+### Feature 0019: Inline Badge System for Project Metadata
+**Status**: Pending
+**Plan**: `docs/0019-inline-badge-system-for-project-metadata-plan.md`
+
+#### Deliverables
+- [ ] New badge generator module with git, version, language, and activity badges
+- [ ] Remove Git column from table headers
+- [ ] Display badges on second line beneath project name
+- [ ] Badge configuration block with enable/disable toggles and custom order
+- [ ] Version extraction from tracking files and project manifests
+- [ ] Language abbreviation system (TS, Py, Rs, Go, etc.)
+- [ ] Activity badge with color coding based on commit frequency
+- [ ] Tests for badge generation, rendering, and table integration
+- [ ] Documentation with badge examples and configuration options
+
+#### Success Criteria
+- [ ] Badges display inline beneath project name in compact format
+- [ ] Git column removed, horizontal space reclaimed
+- [ ] All four badge types render correctly with appropriate colors
+- [ ] Configuration allows customizing badge order and visibility
+- [ ] Version badge distinguishes stable (1.0+) vs pre-release (0.x) with colors
+- [ ] No performance impact from badge generation
+- [ ] Works in terminals with and without color support
+
+### Feature 0020: Last Edited Column
+**Status**: Pending  
+**Plan**: `docs/0020-last-edited-column-plan.md`
+
+#### Deliverables
+- [ ] Enriched project metadata with normalized last-edited timestamps (git-first, filesystem fallback).
+- [ ] Configuration toggles for column visibility and formatting preferences.
+- [ ] Table column showing relative/absolute time with color cues.
+- [ ] Cache integration and invalidation keyed on git HEAD or file mtimes.
+- [ ] Documentation updates covering usage, flags, and configuration.
+
+#### Success Criteria
+- [ ] Column appears by default and can be disabled or reformatted via config.
+- [ ] Values favor git history when available; fallback paths stay accurate within 5 minutes of real edits.
+- [ ] Sorting by last edited (Features 0015/0016) uses the new metadata without regressions.
+- [ ] Rendering keeps table alignment and remains performant for 1k projects (<5ms added).
+
+### Feature 0021: Interactive Project Actions Listing
+**Status**: Pending  
+**Plan**: `docs/0021-interactive-project-actions-listing-plan.md`
+
+#### Deliverables
+- [ ] New `projector actions` command (and `projector list --actions` alias) launching an interactive project selector.
+- [ ] Action registry system with pluggable project actions.
+- [ ] Core toggle-ignore action that persists updates to the config and refreshes caches.
+- [ ] Multi-select and shortcut-driven UX that surfaces project metadata while navigating.
+- [ ] Dry-run and non-TTY fallbacks clarifying how to use the feature.
+- [ ] Documentation updates covering usage, configuration, and extension points.
+
+#### Success Criteria
+- [ ] Interactive screen works in modern terminals and degrades gracefully when not a TTY.
+- [ ] Ignore toggles persist reliably and reflect immediately in subsequent listings.
+- [ ] Architecture supports registering additional actions without UI rewrites.
+- [ ] Performance stays on par with current list command (loading + UI < 250ms on 500 projects).
+- [ ] Clear summaries report the actions executed before exit.
 
 #### Future Considerations  
 - Plugin system for custom analyzers

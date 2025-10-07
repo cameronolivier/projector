@@ -2,10 +2,18 @@ import Table from 'cli-table3'
 import chalk from 'chalk'
 import * as path from 'path'
 import * as os from 'os'
-import { AnalyzedProject, ColorScheme, GitInsights } from '../types.js'
+import { AnalyzedProject, ColorScheme, GitInsights, TagConfig, TagColor } from '../types.js'
+import { DEFAULT_TAG_PALETTE } from '../tags/palette.js'
+import { hashTag, truncateTag } from '../tags/utils.js'
+
+interface TableOptions {
+  colorScheme?: ColorScheme
+  tagConfig?: TagConfig
+}
 
 export class TableGenerator {
-  generateTable(projects: AnalyzedProject[], colorScheme?: ColorScheme): string {
+  generateTable(projects: AnalyzedProject[], options: TableOptions = {}): string {
+    const colorScheme = options.colorScheme
     const table = new Table({
       head: [
         chalk.hex(colorScheme?.header || '#00d4ff').bold('📁 Project'),
@@ -19,7 +27,7 @@ export class TableGenerator {
         head: [],
         border: ['gray']
       },
-      colWidths: [20, 15, 28, 12, 32, 45],
+      colWidths: [24, 15, 28, 12, 32, 45],
       wordWrap: true
     })
 
@@ -34,22 +42,68 @@ export class TableGenerator {
     })
 
     for (const project of sortedProjects) {
-      const row = this.formatRow(project, colorScheme)
+      const row = this.formatRow(project, options)
       table.push(row)
     }
 
     return table.toString()
   }
 
-  formatRow(project: AnalyzedProject, colorScheme?: ColorScheme): string[] {
-    const projectName = chalk.hex(colorScheme?.projectName || '#ffffff')(project.name)
-    const status = this.formatStatus(project.status.details, project.status.type, colorScheme)
+  formatRow(project: AnalyzedProject, options: TableOptions = {}): string[] {
+    const projectName = chalk.hex(options.colorScheme?.projectName || '#ffffff')(project.name)
+    const projectCell = this.composeProjectCell(projectName, project.tag, options.tagConfig)
+    const status = this.formatStatus(project.status.details, project.status.type, options.colorScheme)
     const git = this.formatGit(project.git)
     const type = this.formatProjectType(project.type, project.languages)
     const location = this.formatLocation(project.path)
     const description = this.formatDescription(project.description, project.status.confidence)
 
-    return [projectName, status, git, type, location, description]
+    return [projectCell, status, git, type, location, description]
+  }
+
+  private composeProjectCell(name: string, tag: string | undefined, tagConfig?: TagConfig): string {
+    const tagLabel = this.buildTagLabel(tag, tagConfig)
+    if (!tagLabel) {
+      return name
+    }
+
+    const style = tagConfig?.style ?? 'badge'
+    if (style === 'suffix') {
+      return `${name} ${tagLabel}`
+    }
+
+    return `${tagLabel} ${name}`
+  }
+
+  private buildTagLabel(tag: string | undefined, tagConfig?: TagConfig): string | null {
+    if (!tagConfig?.enabled || !tag) {
+      return null
+    }
+
+    const palette = this.resolvePalette(tagConfig)
+    if (palette.length === 0) {
+      return null
+    }
+
+    const truncated = truncateTag(tag, tagConfig.maxLength ?? 12)
+    const color = palette[hashTag(tag) % palette.length]
+
+    switch (tagConfig.style) {
+      case 'inline':
+        return chalk.hex(color.foreground)(`[${truncated}]`)
+      case 'suffix':
+        return chalk.hex(color.foreground)(`(${truncated})`)
+      case 'badge':
+      default:
+        return chalk.bgHex(color.background).hex(color.foreground)(` ${truncated} `)
+    }
+  }
+
+  private resolvePalette(tagConfig?: TagConfig): TagColor[] {
+    if (tagConfig?.colorPalette && tagConfig.colorPalette.length > 0) {
+      return tagConfig.colorPalette
+    }
+    return DEFAULT_TAG_PALETTE
   }
 
   private formatStatus(details: string, type: string, colorScheme?: ColorScheme): string {

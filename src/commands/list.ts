@@ -10,6 +10,7 @@ import { defaultEditorFromEnv, supportedEditors, buildEditorCommand, isGuiEditor
 import { spawn } from 'child_process'
 import { GitAnalyzer } from '../lib/git/analyzer.js'
 import type { CachedGitInsights } from '../lib/types.js'
+import { deriveParentTag } from '../lib/tags/utils.js'
 
 export default class List extends Command {
   static override description = 'Discover and analyze development projects with intelligent scanning and status tracking'
@@ -150,6 +151,7 @@ export default class List extends Command {
       for (const directory of directories) {
         processedCount++
         const progress = `(${processedCount}/${totalCount})`
+        const tag = deriveParentTag(directory.path, scanDirectory)
         
         // Try to get from cache first (unless disabled)
         let cachedData = null
@@ -193,6 +195,7 @@ export default class List extends Command {
             trackingFiles: [],
             confidence: cachedData.status.confidence,
             git: gitInsights,
+            tag,
           })
 
         } else {
@@ -260,6 +263,7 @@ export default class List extends Command {
             trackingFiles: [],
             confidence: status.confidence,
             git: gitInsights,
+            tag,
           })
         }
       }
@@ -268,7 +272,10 @@ export default class List extends Command {
       projects.sort((a, b) => a.name.localeCompare(b.name))
 
       // Generate table string
-      const table = tableGenerator.generateTable(projects)
+      const table = tableGenerator.generateTable(projects, {
+        colorScheme: config.colorScheme,
+        tagConfig: config.tags,
+      })
 
       // When selecting with --path-only, suppress table output
       const suppressOutput = Boolean(flags.select && flags['path-only'])
