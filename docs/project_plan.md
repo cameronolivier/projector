@@ -217,8 +217,48 @@ Each phase requires:
 - [ ] Table alignment remains clean with tags
 - [ ] No performance impact on scanning
 
+### Feature 0015: Default Sort by Last Edited
+**Status**: Pending
+**Plan**: `docs/0015-default-sort-by-last-edited-plan.md`
+
+#### Deliverables
+- [ ] Change default table sorting to last-edited (most recent first)
+- [ ] Use existing `lastModified` field from directory stats
+- [ ] Alphabetical fallback for projects with same timestamp
+- [ ] Configuration option to preserve alphabetical default
+- [ ] Fast sorting with no performance impact (<1ms for 100 projects)
+- [ ] Tests for sort behavior with various timestamps
+- [ ] Documentation of new default behavior
+
+#### Success Criteria
+- [ ] Most recently edited projects appear at top of table
+- [ ] Same-timestamp projects sorted alphabetically
+- [ ] Config option `sorting.defaultOrder: 'name'` reverts to alphabetical
+- [ ] Zero measurable performance overhead
+- [ ] No regressions in table formatting
+
+### Feature 0016: Configurable Table Sorting
+**Status**: Pending
+**Plan**: `docs/0016-configurable-table-sorting-plan.md`
+
+#### Deliverables
+- [ ] CLI flags: `--sort-by <field>` and `--sort-dir <asc|desc>`
+- [ ] Support sort fields: name, last-edited, status, type, tag
+- [ ] Smart direction defaults per field (desc for dates, asc for names)
+- [ ] Multi-level sorting with secondary keys for tie-breaking
+- [ ] New sorter module with comparison functions
+- [ ] Configuration for default sort preferences
+- [ ] Tests for all sort fields and directions
+- [ ] Examples in documentation and help text
+
+#### Success Criteria
+- [ ] Users can sort by any supported field via flags
+- [ ] Sort behavior is intuitive and stable
+- [ ] Flags override config defaults correctly
+- [ ] Performance remains excellent (<2ms for 1000 projects)
+- [ ] Documentation clearly explains sort options
+
 #### Planned Features (Phase 5 - Remaining)
-- [ ] allow projects to be sorted. Default to last-edited, but should be sortable by name and categories (which is parent folder names)
 - [ ] add "search criteria" for finding the project status - this is the different aspects to look for when deciding on the project's status
 - [ ] status should be one of "unknown", "planning", "in progress", "feature complete" (for all planned tasks completed)
 - [ ] add a 'progress' column that is the completed tickets/total value where available) - leave blank if not 'in progress' or 'feature complete'
