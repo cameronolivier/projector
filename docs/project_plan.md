@@ -280,8 +280,29 @@ Each phase requires:
 - [ ] 80%+ accuracy on real projects
 - [ ] No performance degradation from criteria evaluation
 
+### Feature 0018: Progress Column
+**Status**: Pending
+**Plan**: `docs/0018-progress-column-plan.md`
+
+#### Deliverables
+- [ ] Add "Progress" column to table output
+- [ ] Extract progress data from existing `PhaseInfo` in tracking files
+- [ ] Display progress only for in-progress and feature-complete statuses
+- [ ] Support multiple formats: fraction (X/Y), percentage (N%), bar, combined
+- [ ] Color coding: green (90%+), yellow (50-89%), cyan (<50%)
+- [ ] Configuration for progress display preferences
+- [ ] Tests for all formats and edge cases
+- [ ] Documentation with examples
+
+#### Success Criteria
+- [ ] Progress column visible between Status and Git columns
+- [ ] Shows completed/total for in-progress and feature-complete projects
+- [ ] Empty indicator (—) for other statuses
+- [ ] Configuration allows format selection
+- [ ] Table alignment remains clean
+- [ ] No performance impact
+
 #### Planned Features (Phase 5 - Remaining)
-- [ ] add a 'progress' column that is the completed tickets/total value where available) - leave blank if not 'in progress' or 'feature complete'
 - [ ] move the 'git' (lightning for tracked project) into the bottom line of the project name as a 'badges' like the github README style badges - but for useful information on the app
 - [ ] add a last edited column.
 - [ ] add an interactive listing of projects to allow for 'actions' to be taken on the listing - initially to set ignored projects, but this will grow in future features.
