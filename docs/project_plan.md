@@ -98,24 +98,6 @@ The **manage-projects-cli** tool development follows a structured 4-phase approa
 - **Deep Recursive Scanning**: Default depth increased to 10 levels for comprehensive project discovery
 - **Simplified Logic**: Removed complex weak indicator logic in favor of clear, strong indicators
 
-#### Future Extensions 🔮 PLANNED
-**Objective**: Add advanced features for power users
-
-#### Planned Features
-- [ ] Interactive project selection with inquirer
-- [ ] Jump to directory functionality  
-- [ ] IDE integration (code ., webstorm ., etc.)
-- [ ] Project template system
-- [ ] Advanced git integration (commit activity, branch analysis)
-
-#### Future Considerations  
-- Plugin system for custom analyzers
-- GitHub/GitLab API integration
-- Dependency health checking (outdated packages, security issues)
-- Project relationship mapping
-- Test coverage analysis
-- Build status monitoring
-
 ## Current Project Status: Phase 4 COMPLETE ✅
 
 **The manage-projects-cli has exceeded initial expectations and completed all core functionality through Phase 4:**
@@ -211,21 +193,47 @@ Each phase requires:
 - Some projects with tracking files for testing
 - Understanding of project types and patterns
 
-## Timeline Flexibility
 
-### Minimum Viable Product (MVP)
-If timeline is compressed, Phase 1 + Phase 2 represent MVP:
-- Basic project discovery
-- Simple status detection
-- Basic table output
+## Phase 5: Enhanced Visual Organization & UX
+**Objective**: Improve visual organization and user experience with tags, sorting, and refined status system
 
-### Extended Timeline
-If more time is available:
-- Add more sophisticated git analysis
-- Implement caching for better performance
-- Add more project type detectors
+### Feature 0014: Parent Directory Tags with Color Schemes
+**Status**: Pending
+**Plan**: `docs/0014-parent-directory-tags-with-color-schemes-plan.md`
 
-## Post-Launch Maintenance
+#### Deliverables
+- [ ] Extract parent directory name as visual tag for each project
+- [ ] Stable color assignment using hash-based palette selection
+- [ ] Badge-style tag rendering with background colors
+- [ ] Configuration options for tag display (enabled, style, maxLength)
+- [ ] Tag extraction handles edge cases (root-level, deep nesting)
+- [ ] Tests for tag extraction, color consistency, and formatting
+- [ ] Updated table output with tags before project names
+
+#### Success Criteria
+- [ ] Tags provide immediate visual categorization of projects
+- [ ] Same tag always shows same color across runs
+- [ ] Tag display is toggleable via config (`tags.enabled: false`)
+- [ ] Table alignment remains clean with tags
+- [ ] No performance impact on scanning
+
+#### Planned Features (Phase 5 - Remaining)
+- [ ] allow projects to be sorted. Default to last-edited, but should be sortable by name and categories (which is parent folder names)
+- [ ] add "search criteria" for finding the project status - this is the different aspects to look for when deciding on the project's status
+- [ ] status should be one of "unknown", "planning", "in progress", "feature complete" (for all planned tasks completed)
+- [ ] add a 'progress' column that is the completed tickets/total value where available) - leave blank if not 'in progress' or 'feature complete'
+- [ ] move the 'git' (lightning for tracked project) into the bottom line of the project name as a 'badges' like the github README style badges - but for useful information on the app
+- [ ] add a last edited column.
+
+#### Future Considerations  
+- Plugin system for custom analyzers
+- GitHub/GitLab API integration
+- Dependency health checking (outdated packages, security issues)
+- Project relationship mapping
+- Test coverage analysis
+- Build status monitoring
+
+## Ongoing Maintenance
 
 ### Ongoing Tasks
 - Update project type detection as new languages/frameworks emerge
