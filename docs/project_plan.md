@@ -284,6 +284,7 @@ Each phase requires:
 - [ ] add a 'progress' column that is the completed tickets/total value where available) - leave blank if not 'in progress' or 'feature complete'
 - [ ] move the 'git' (lightning for tracked project) into the bottom line of the project name as a 'badges' like the github README style badges - but for useful information on the app
 - [ ] add a last edited column.
+- [ ] add an interactive listing of projects to allow for 'actions' to be taken on the listing - initially to set ignored projects, but this will grow in future features.
 
 #### Future Considerations  
 - Plugin system for custom analyzers
