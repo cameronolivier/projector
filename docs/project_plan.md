@@ -258,9 +258,29 @@ Each phase requires:
 - [ ] Performance remains excellent (<2ms for 1000 projects)
 - [ ] Documentation clearly explains sort options
 
+### Feature 0017: Enhanced Status Detection with Search Criteria
+**Status**: Pending
+**Plan**: `docs/0017-enhanced-status-detection-search-criteria-plan.md`
+
+#### Deliverables
+- [ ] New clear status types: unknown, planning, in-progress, feature-complete, stable, archived
+- [ ] Configurable status criteria system with pattern matching
+- [ ] Default criteria for each status type (patterns, phases, versions, TODOs, git activity)
+- [ ] New `StatusDetector` class with evidence-based scoring
+- [ ] Backward compatibility mapping for old status types
+- [ ] Updated table colors for new status types
+- [ ] Configuration documentation for customizing criteria
+- [ ] Tests for all status types and criteria matching
+
+#### Success Criteria
+- [ ] Clear status progression reflects project lifecycle
+- [ ] Configurable criteria allow team-specific workflows
+- [ ] Status detection uses multiple evidence sources
+- [ ] Confidence scores reflect detection reliability
+- [ ] 80%+ accuracy on real projects
+- [ ] No performance degradation from criteria evaluation
+
 #### Planned Features (Phase 5 - Remaining)
-- [ ] add "search criteria" for finding the project status - this is the different aspects to look for when deciding on the project's status
-- [ ] status should be one of "unknown", "planning", "in progress", "feature complete" (for all planned tasks completed)
 - [ ] add a 'progress' column that is the completed tickets/total value where available) - leave blank if not 'in progress' or 'feature complete'
 - [ ] move the 'git' (lightning for tracked project) into the bottom line of the project name as a 'badges' like the github README style badges - but for useful information on the app
 - [ ] add a last edited column.
