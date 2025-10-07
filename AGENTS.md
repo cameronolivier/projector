@@ -35,6 +35,7 @@
 - When ready to ship, run `corepack pnpm version-packages` to bump versions and update the changelog automatically.
 - Tag the release (`git tag vX.Y.Z`) and optionally publish via `corepack pnpm release` once artifacts look good.
 - Never delete `.changeset` entries manually; the CLI cleans them up during `version-packages`.
+- Husky pre-commit hook runs `pnpm check:changeset`; if your commit touches `src/`, `docs/`, `scripts/`, etc., add a changeset note or bypass with `SKIP_CHANGESET_CHECK=1`.
 
 ## Security & Configuration Tips
 - Respect the config location `~/.config/projector/config.yaml` and cache under `~/.config/projector/cache/`; never commit user state.
