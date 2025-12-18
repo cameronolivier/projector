@@ -2,7 +2,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import * as os from 'os'
 import { parse, stringify } from 'yaml'
-import { ProjectsConfig, TrackingPattern, TrackingType, ColorScheme, TrackingInfo, TemplateDefinition, GitInsightsConfig, TagConfig } from '../types.js'
+import { ProjectsConfig, TrackingPattern, TrackingType, ColorScheme, TrackingInfo, TemplateDefinition, GitInsightsConfig, TagConfig, IgnoreConfig } from '../types.js'
 import { DEFAULT_TAG_PALETTE } from '../tags/palette.js'
 
 export class ConfigurationManager {
@@ -180,9 +180,15 @@ export class ConfigurationManager {
       colorScheme: {
         header: '#00d4ff',      // Bright cyan
         phaseStatus: '#ff6b35',  // Orange
-        stableStatus: '#4caf50', // Green  
+        stableStatus: '#4caf50', // Green
         unknownStatus: '#9e9e9e', // Gray
         projectName: '#ffffff',  // White
+      },
+      ignore: {
+        patterns: [],
+        useIgnoreFiles: true,
+        ignoreFileName: '.projectorignore',
+        directories: [],
       },
       gitInsights: this.getDefaultGitInsightsConfig(),
     }
@@ -229,6 +235,7 @@ export class ConfigurationManager {
       templates: this.mergeTemplates(defaults.templates || [], (userConfig as any).templates || []),
       tags: this.mergeTags(defaults.tags, (userConfig as any).tags),
       colorScheme: { ...defaults.colorScheme, ...userConfig.colorScheme },
+      ignore: this.mergeIgnoreConfig(defaults.ignore!, userConfig.ignorePatterns, (userConfig as any).ignore),
       gitInsights: this.mergeGitInsights(defaults.gitInsights, (userConfig as any).gitInsights),
     }
   }
@@ -277,6 +284,22 @@ export class ConfigurationManager {
       maxLength: overrides.maxLength || defaults.maxLength,
       colorPalette: palette,
     }
+  }
+
+  private mergeIgnoreConfig(defaults: IgnoreConfig, legacyIgnorePatterns?: string[], overrides?: Partial<IgnoreConfig>): IgnoreConfig {
+    const result: IgnoreConfig = {
+      patterns: overrides?.patterns || defaults.patterns || [],
+      useIgnoreFiles: typeof overrides?.useIgnoreFiles === 'boolean' ? overrides.useIgnoreFiles : defaults.useIgnoreFiles,
+      ignoreFileName: overrides?.ignoreFileName || defaults.ignoreFileName,
+      directories: overrides?.directories || defaults.directories || [],
+    }
+
+    // Migrate legacy ignorePatterns to directories if not already set
+    if (legacyIgnorePatterns && legacyIgnorePatterns.length > 0 && (!result.directories || result.directories.length === 0)) {
+      result.directories = legacyIgnorePatterns
+    }
+
+    return result
   }
 
   private mergeGitInsights(defaults?: GitInsightsConfig, overrides?: Partial<GitInsightsConfig>): GitInsightsConfig | undefined {

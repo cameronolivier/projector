@@ -18,6 +18,7 @@ export class TableGenerator {
       head: [
         chalk.hex(colorScheme?.header || '#00d4ff').bold('📁 Project'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Status'),
+        chalk.hex(colorScheme?.header || '#00d4ff').bold('Category'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Git'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Type'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('📍 Location'),
@@ -27,7 +28,7 @@ export class TableGenerator {
         head: [],
         border: ['gray']
       },
-      colWidths: [24, 15, 28, 12, 32, 45],
+      colWidths: [24, 15, 18, 28, 12, 32, 45],
       wordWrap: true
     })
 
@@ -51,52 +52,35 @@ export class TableGenerator {
 
   formatRow(project: AnalyzedProject, options: TableOptions = {}): string[] {
     const projectName = chalk.hex(options.colorScheme?.projectName || '#ffffff')(project.name)
-    const projectCell = this.composeProjectCell(projectName, project.tag, options.tagConfig)
     const status = this.formatStatus(project.status.details, project.status.type, options.colorScheme)
+    const category = this.formatCategory(project.tag, options.tagConfig)
     const git = this.formatGit(project.git)
     const type = this.formatProjectType(project.type, project.languages)
     const location = this.formatLocation(project.path)
     const description = this.formatDescription(project.description, project.status.confidence)
 
-    return [projectCell, status, git, type, location, description]
+    return [projectName, status, category, git, type, location, description]
   }
 
-  private composeProjectCell(name: string, tag: string | undefined, tagConfig?: TagConfig): string {
-    const tagLabel = this.buildTagLabel(tag, tagConfig)
-    if (!tagLabel) {
-      return name
+  private formatCategory(tag: string | undefined, tagConfig?: TagConfig): string {
+    if (!tagConfig?.enabled) {
+      return chalk.gray('—')
     }
 
-    const style = tagConfig?.style ?? 'badge'
-    if (style === 'suffix') {
-      return `${name} ${tagLabel}`
-    }
-
-    return `${tagLabel} ${name}`
-  }
-
-  private buildTagLabel(tag: string | undefined, tagConfig?: TagConfig): string | null {
-    if (!tagConfig?.enabled || !tag) {
-      return null
+    if (!tag) {
+      return chalk.gray('—')
     }
 
     const palette = this.resolvePalette(tagConfig)
     if (palette.length === 0) {
-      return null
+      return chalk.gray(tag)
     }
 
     const truncated = truncateTag(tag, tagConfig.maxLength ?? 12)
     const color = palette[hashTag(tag) % palette.length]
 
-    switch (tagConfig.style) {
-      case 'inline':
-        return chalk.hex(color.foreground)(`[${truncated}]`)
-      case 'suffix':
-        return chalk.hex(color.foreground)(`(${truncated})`)
-      case 'badge':
-      default:
-        return chalk.bgHex(color.background).hex(color.foreground)(` ${truncated} `)
-    }
+    const label = chalk.bgHex(color.background).hex(color.foreground)(` ${truncated} `)
+    return label
   }
 
   private resolvePalette(tagConfig?: TagConfig): TagColor[] {

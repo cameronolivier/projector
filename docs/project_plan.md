@@ -362,6 +362,24 @@ Each phase requires:
 - [ ] Performance stays on par with current list command (loading + UI < 250ms on 500 projects).
 - [ ] Clear summaries report the actions executed before exit.
 
+### Feature 0022: Table Layout and Progress Refresh
+**Status**: Pending  
+**Plan**: `docs/0022-table-layout-and-progress-refresh-plan.md`
+
+#### Deliverables
+- [ ] Reordered table columns: Project, Description, Status, Category, Progress, Last Edited, Location, Type.
+- [ ] Project names and locations wrap naturally without truncation.
+- [ ] New Progress column replacing Git, showing completed/total and percentage (or `N/A`).
+- [ ] Last Edited column renders sortable datetime values with optional relative display.
+- [ ] Updated documentation and help text describing the new layout.
+- [ ] Tests covering progress formatting, column order, and wrapping.
+
+#### Success Criteria
+- [ ] CLI output matches the specified column order across modes.
+- [ ] Progress column derives data from TODO counts when available and gracefully falls back.
+- [ ] Sorting integrations operate correctly with the absolute Last Edited values.
+- [ ] Table remains performant and visually aligned after layout changes.
+
 #### Future Considerations  
 - Plugin system for custom analyzers
 - GitHub/GitLab API integration

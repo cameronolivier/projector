@@ -72,9 +72,11 @@ describe('TableGenerator git output', () => {
     const table = generator.generateTable([project])
 
     expect(table).toContain('demo')
+    expect(table).toContain('Category')
     expect(table).toContain('main')
     expect(table).toContain('5/30d')
     expect(table).toContain('stale branch')
+    expect(table).toContain('—')
   })
 
   it('includes git counts in summary output', () => {

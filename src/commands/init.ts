@@ -309,6 +309,7 @@ export default class Init extends Command {
       descriptions: finalDescriptions,
       ignorePatterns: finalIgnorePatterns,
       codeFileExtensions: defaults.codeFileExtensions,
+      tags: defaults.tags,
       colorScheme: finalColorScheme,
     }
   }

@@ -5,12 +5,14 @@ import { TrackingAnalyzer } from '../lib/tracking/analyzer.js'
 import { TableGenerator } from '../lib/output/table.js'
 import { ConfigurationManager } from '../lib/config/config.js'
 import { CacheManager } from '../lib/cache/manager.js'
+import { IgnoreMatcher } from '../lib/discovery/ignore-matcher.js'
 import inquirer from 'inquirer'
 import { defaultEditorFromEnv, supportedEditors, buildEditorCommand, isGuiEditor, type EditorId } from '../lib/commands/open-utils.js'
 import { spawn } from 'child_process'
 import { GitAnalyzer } from '../lib/git/analyzer.js'
-import type { CachedGitInsights } from '../lib/types.js'
+import type { CachedGitInsights, ProjectDirectory } from '../lib/types.js'
 import { deriveParentTag } from '../lib/tags/utils.js'
+import { Spinner } from '../lib/output/spinner.js'
 
 export default class List extends Command {
   static override description = 'Discover and analyze development projects with intelligent scanning and status tracking'
@@ -131,142 +133,181 @@ export default class List extends Command {
         await cacheManager.clearCache()
       }
       
-      // Discover projects
-      const directories = await scanner.scanDirectory(scanDirectory, {
-        maxDepth,
-        ignorePatterns: config.ignorePatterns,
-        followSymlinks: false,
-      })
-      
+      const useSpinner = Boolean(
+        process.stdout.isTTY &&
+        process.stdin.isTTY &&
+        process.env.NODE_ENV !== 'test' &&
+        !flags.verbose
+      )
+      const spinner = useSpinner ? new Spinner('✨ Collating project data…') : null
+
+      let directories: ProjectDirectory[]
+      try {
+        spinner?.start()
+        directories = await scanner.scanDirectory(scanDirectory, {
+          maxDepth,
+          ignorePatterns: config.ignorePatterns,
+          followSymlinks: false,
+        })
+
+        // Apply project-level ignore patterns
+        if (config.ignore?.patterns && config.ignore.patterns.length > 0) {
+          const ignoreMatcher = new IgnoreMatcher(config.ignore)
+          const beforeCount = directories.length
+          directories = directories.filter(project => !ignoreMatcher.shouldIgnoreProject(project))
+
+          if (flags.verbose && beforeCount > directories.length) {
+            this.log(`Filtered ${beforeCount - directories.length} ignored projects`)
+          }
+        }
+      } catch (error) {
+        spinner?.fail('Failed to discover projects')
+        throw error
+      }
+
       if (directories.length === 0) {
+        spinner?.succeed('No projects found')
         this.log(`No projects found in ${scanDirectory}`)
         return
       }
-      
+
+      spinner?.setMessage('🔎 Analyzing projects…')
+
       // Analyze each project with caching
       const projects = []
       const totalCount = directories.length
       let processedCount = 0
       
-      for (const directory of directories) {
-        processedCount++
-        const progress = `(${processedCount}/${totalCount})`
-        const tag = deriveParentTag(directory.path, scanDirectory)
-        
-        // Try to get from cache first (unless disabled)
-        let cachedData = null
-        if (!flags['no-cache']) {
-          cachedData = await cacheManager.getCachedProject(directory)
-        }
-        
-        if (cachedData) {
-          // Use cached data
-          if (flags.verbose) {
-            this.log(`📋 Using cached data for ${directory.name} ${progress}`)
+      try {
+        for (const directory of directories) {
+          processedCount++
+          const progress = `(${processedCount}/${totalCount})`
+          const tag = deriveParentTag(directory.path, scanDirectory)
+
+          if (useSpinner) {
+            spinner?.setMessage(`🔎 Analyzing ${directory.name} ${progress}`)
           }
 
-          let gitInsights = undefined
-          if (gitInsightsEnabled && gitConfig && cachedData.hasGit) {
-            try {
-              const gitResult = await gitAnalyzer.collect(directory.path, gitConfig, cachedData.git)
-              if (gitResult) {
-                gitInsights = gitResult.insights
-                if (!flags['no-cache'] && (!cachedData.git || gitResult.cache !== cachedData.git)) {
-                  await cacheManager.updateGitInsights(directory, gitResult.cache)
-                }
-              } else if (cachedData.git?.insights) {
-                gitInsights = cachedData.git.insights
-              }
-            } catch (error) {
-              if (flags.verbose) {
-                this.warn(`⚠️  Failed to collect git insights for ${directory.name}: ${error instanceof Error ? error.message : String(error)}`)
-              }
-              gitInsights = cachedData.git?.insights
-            }
-          }
-
-          projects.push({
-            ...directory,
-            type: detector.detectProjectType(directory), // Detect type since we don't cache it
-            languages: cachedData.languages,
-            hasGit: cachedData.hasGit,
-            status: cachedData.status,
-            description: cachedData.description,
-            trackingFiles: [],
-            confidence: cachedData.status.confidence,
-            git: gitInsights,
-            tag,
-          })
-
-        } else {
-          // Fresh analysis
-          if (flags.verbose || totalCount > 5) {
-            this.log(`🔍 Analyzing ${directory.name} ${progress}`)
-          }
-
-          // Detect project type
-          const projectType = detector.detectProjectType(directory)
-          const languages = detector.detectLanguages(directory)
-          const hasGit = detector.hasGitRepository(directory)
-
-          // Analyze tracking status
-          const status = await analyzer.analyzeProject(directory)
-          const trackingFiles = await analyzer.detectTrackingFiles(directory)
-
-          // Extract description from various sources
-          let description = config.descriptions[directory.name] || 'No description available'
-
-          // Try to get description from tracking files if available
-          for (const trackingFile of trackingFiles) {
-            if (trackingFile.content.description) {
-              description = trackingFile.content.description
-              break
-            }
-          }
-
-          let gitCache: CachedGitInsights | undefined
-          let gitInsights = undefined
-          if (gitInsightsEnabled && gitConfig && hasGit) {
-            try {
-              const gitResult = await gitAnalyzer.collect(directory.path, gitConfig)
-              if (gitResult) {
-                gitCache = gitResult.cache
-                gitInsights = gitResult.insights
-              }
-            } catch (error) {
-              if (flags.verbose) {
-                this.warn(`⚠️  Failed to collect git insights for ${directory.name}: ${error instanceof Error ? error.message : String(error)}`)
-              }
-            }
-          }
-
-          // Cache the results for next time
+          // Try to get from cache first (unless disabled)
+          let cachedData = null
           if (!flags['no-cache']) {
-            await cacheManager.setCachedProject(
-              directory,
-              status,
-              description,
-              trackingFiles,
+            cachedData = await cacheManager.getCachedProject(directory)
+          }
+
+          if (cachedData) {
+            // Use cached data
+            if (flags.verbose) {
+              this.log(`📋 Using cached data for ${directory.name} ${progress}`)
+            }
+
+            let gitInsights = undefined
+            if (gitInsightsEnabled && gitConfig && cachedData.hasGit) {
+              try {
+                const gitResult = await gitAnalyzer.collect(directory.path, gitConfig, cachedData.git)
+                if (gitResult) {
+                  gitInsights = gitResult.insights
+                  if (!flags['no-cache'] && (!cachedData.git || gitResult.cache !== cachedData.git)) {
+                    await cacheManager.updateGitInsights(directory, gitResult.cache)
+                  }
+                } else if (cachedData.git?.insights) {
+                  gitInsights = cachedData.git.insights
+                }
+              } catch (error) {
+                if (flags.verbose) {
+                  this.warn(`⚠️  Failed to collect git insights for ${directory.name}: ${error instanceof Error ? error.message : String(error)}`)
+                }
+                gitInsights = cachedData.git?.insights
+              }
+            }
+
+            projects.push({
+              ...directory,
+              type: detector.detectProjectType(directory), // Detect type since we don't cache it
+              languages: cachedData.languages,
+              hasGit: cachedData.hasGit,
+              status: cachedData.status,
+              description: cachedData.description,
+              trackingFiles: [],
+              confidence: cachedData.status.confidence,
+              git: gitInsights,
+              tag,
+            })
+
+          } else {
+            // Fresh analysis
+            if (!useSpinner && (flags.verbose || totalCount > 5)) {
+              this.log(`🔍 Analyzing ${directory.name} ${progress}`)
+            }
+
+            // Detect project type
+            const projectType = detector.detectProjectType(directory)
+            const languages = detector.detectLanguages(directory)
+            const hasGit = detector.hasGitRepository(directory)
+
+            // Analyze tracking status
+            const status = await analyzer.analyzeProject(directory)
+            const trackingFiles = await analyzer.detectTrackingFiles(directory)
+
+            // Extract description from various sources
+            let description = config.descriptions[directory.name] || 'No description available'
+
+            // Try to get description from tracking files if available
+            for (const trackingFile of trackingFiles) {
+              if (trackingFile.content.description) {
+                description = trackingFile.content.description
+                break
+              }
+            }
+
+            let gitCache: CachedGitInsights | undefined
+            let gitInsights = undefined
+            if (gitInsightsEnabled && gitConfig && hasGit) {
+              try {
+                const gitResult = await gitAnalyzer.collect(directory.path, gitConfig)
+                if (gitResult) {
+                  gitCache = gitResult.cache
+                  gitInsights = gitResult.insights
+                }
+              } catch (error) {
+                if (flags.verbose) {
+                  this.warn(`⚠️  Failed to collect git insights for ${directory.name}: ${error instanceof Error ? error.message : String(error)}`)
+                }
+              }
+            }
+
+            // Cache the results for next time
+            if (!flags['no-cache']) {
+              await cacheManager.setCachedProject(
+                directory,
+                status,
+                description,
+                trackingFiles,
+                languages,
+                hasGit,
+                gitCache
+              )
+            }
+
+            projects.push({
+              ...directory,
+              type: projectType,
               languages,
               hasGit,
-              gitCache
-            )
+              status,
+              description,
+              trackingFiles: [],
+              confidence: status.confidence,
+              git: gitInsights,
+              tag,
+            })
           }
-
-          projects.push({
-            ...directory,
-            type: projectType,
-            languages,
-            hasGit,
-            status,
-            description,
-            trackingFiles: [],
-            confidence: status.confidence,
-            git: gitInsights,
-            tag,
-          })
         }
+      } catch (error) {
+        spinner?.fail('Failed to analyze projects')
+        throw error
       }
+
+      spinner?.succeed('✅ Project data ready')
       
       // Sort projects by name
       projects.sort((a, b) => a.name.localeCompare(b.name))

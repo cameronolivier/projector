@@ -2,12 +2,15 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import { ProjectDirectory, ScanOptions, ProjectType, ProjectsConfig } from '../types.js'
 import { RootSignalScorer } from './root-scorer.js'
+import { IgnoreMatcher, type IgnoreContext } from './ignore-matcher.js'
 
 export class ProjectScanner {
   private config?: ProjectsConfig
+  private ignoreMatcher: IgnoreMatcher
 
   constructor(config?: ProjectsConfig) {
     this.config = config
+    this.ignoreMatcher = new IgnoreMatcher(config?.ignore)
   }
   async scanDirectory(basePath: string, options: ScanOptions): Promise<ProjectDirectory[]> {
     try {
@@ -41,18 +44,32 @@ export class ProjectScanner {
     projects: ProjectDirectory[],
     visitedPaths: Set<string>,
     projectRoots: Set<string>,
-    allowInsideRoots: boolean = false
+    allowInsideRoots: boolean = false,
+    ignoreContext?: IgnoreContext
   ): Promise<void> {
     // Check depth limit
     if (currentDepth >= maxDepth) {
       return
     }
     
-    // Skip ignored directories
+    // Skip ignored directories (legacy)
     if (this.shouldIgnoreDirectory(currentPath, ignorePatterns)) {
       return
     }
-    
+
+    // NEW: Build ignore context and check against new rules
+    if (this.config?.ignore?.useIgnoreFiles) {
+      const context = await this.ignoreMatcher.buildContext(currentPath, ignoreContext)
+      const basename = path.basename(currentPath)
+
+      if (this.ignoreMatcher.shouldIgnoreDirectory(currentPath, basename, context)) {
+        return
+      }
+
+      // Pass context to recursive calls below
+      ignoreContext = context
+    }
+
     // Skip if inside an already identified project root
     if (!allowInsideRoots) {
       if (Array.from(projectRoots).some(root => currentPath.startsWith(root + path.sep))) {
@@ -124,7 +141,8 @@ export class ProjectScanner {
                 projects,
                 visitedPaths,
                 projectRoots,
-                true
+                true,
+                ignoreContext
               )
             }
           }
@@ -154,7 +172,7 @@ export class ProjectScanner {
       for (let i = 0; i < subdirectories.length; i += concurrencyLimit) {
         const batch = subdirectories.slice(i, i + concurrencyLimit)
         await Promise.allSettled(
-          batch.map(subdir => 
+          batch.map(subdir =>
             this.scanDirectoryRecursive(
               subdir,
               currentDepth + 1,
@@ -163,7 +181,8 @@ export class ProjectScanner {
               projects,
               visitedPaths,
               projectRoots,
-              false
+              false,
+              ignoreContext
             )
           )
         )

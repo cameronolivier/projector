@@ -147,6 +147,18 @@ export interface ProjectsConfig {
   colorScheme: ColorScheme
   gitInsights?: GitInsightsConfig
   tags: TagConfig
+  ignore?: IgnoreConfig
+}
+
+export interface IgnoreConfig {
+  // Glob patterns to match project paths or names
+  patterns?: string[]
+  // Use .projectorignore files during scan
+  useIgnoreFiles?: boolean
+  // Name of ignore file (default: .projectorignore)
+  ignoreFileName?: string
+  // Legacy: directory basenames (for backward compat)
+  directories?: string[]
 }
 
 export interface ColorScheme {
