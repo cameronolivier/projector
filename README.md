@@ -143,6 +143,69 @@ Precedence and prompts:
 - `--interactive` forces the action flow even if defaults or TTY detection would skip it; `--no-interactive` disables it.
 - Tip: For legacy behavior only, run `projector --select --no-interactive`. For the new flow only, just run `projector` (in a TTY) or add `--interactive`.
 
+## Ignoring Projects
+
+Projector provides flexible project filtering through global configuration and per-directory ignore files:
+
+### Global Configuration
+
+Add ignore patterns to `~/.config/projector/config.yaml`:
+
+```yaml
+ignore:
+  # Glob patterns for project names or paths
+  patterns:
+    - "*-backup"      # Match any project ending with -backup
+    - "*-old"         # Match any project ending with -old
+    - "tmp-*"         # Match any project starting with tmp-
+    - "**/archive/*"  # Match any project in an archive directory
+
+  # Use .projectorignore files (default: true)
+  useIgnoreFiles: true
+
+  # Custom ignore file name (default: .projectorignore)
+  ignoreFileName: ".projectorignore"
+```
+
+### Per-Directory Ignore Files
+
+Create `.projectorignore` files in any directory to specify ignore rules for that location and its subdirectories:
+
+```gitignore
+# Comments start with #
+
+# Exact directory names (applied during scan traversal)
+node_modules
+.git
+dist
+
+# Glob patterns for project names
+*-backup
+test-*
+tmp-*
+
+# Glob patterns for paths
+**/tmp/*
+**/old-projects/*
+
+# Negation (include despite parent ignore)
+!important-backup
+```
+
+**Pattern Syntax:**
+- `*` matches any characters except `/`
+- `**` matches any characters including `/`
+- `!pattern` negates a previous ignore rule
+- Patterns without `/` match against project names
+- Patterns with `/` or `**` match against full paths
+
+**How It Works:**
+- Global patterns are checked first
+- `.projectorignore` files are loaded hierarchically (parent → child)
+- Later rules override earlier ones
+- Negation rules take precedence when they match
+- Backward compatible with existing `ignorePatterns` config
+
 ## Docs
 - Architecture: `docs/architecture.md`
 - Testing: `docs/TESTING.md`
