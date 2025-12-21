@@ -95,43 +95,45 @@ export default class Ignore extends Command {
       const detector = new TypeDetector()
       const analyzer = new TrackingAnalyzer(config.trackingPatterns)
 
-      const discoveredDirs = await scanner.scanDirectory(scanDirectory, {
-        maxDepth,
-        ignorePatterns: [], // Don't apply ignore patterns - we want to see all projects
-        followSymlinks: false,
-      })
+      let projects: AnalyzedProject[] = []
 
-      const projects: AnalyzedProject[] = []
-
-      for (const dir of discoveredDirs) {
-        const type = detector.detectProjectType(dir)
-        const status = await analyzer.analyzeProject(dir)
-        const trackingFiles = await analyzer.detectTrackingFiles(dir)
-        const languages = detector.detectLanguages(dir)
-        const hasGit = detector.hasGitRepository(dir)
-
-        // Extract description from tracking files if available
-        let description = config.descriptions?.[dir.name] || ''
-        for (const trackingFile of trackingFiles) {
-          if (trackingFile.content.description) {
-            description = trackingFile.content.description
-            break
-          }
-        }
-
-        projects.push({
-          ...dir,
-          type,
-          languages,
-          hasGit,
-          status,
-          description,
-          trackingFiles,
-          confidence: status.confidence,
+      try {
+        const discoveredDirs = await scanner.scanDirectory(scanDirectory, {
+          maxDepth,
+          ignorePatterns: [], // Don't apply ignore patterns - we want to see all projects
+          followSymlinks: false,
         })
-      }
 
-      spinner.stop()
+        for (const dir of discoveredDirs) {
+          const type = detector.detectProjectType(dir)
+          const status = await analyzer.analyzeProject(dir)
+          const trackingFiles = await analyzer.detectTrackingFiles(dir)
+          const languages = detector.detectLanguages(dir)
+          const hasGit = detector.hasGitRepository(dir)
+
+          // Extract description from tracking files if available
+          let description = config.descriptions?.[dir.name] || ''
+          for (const trackingFile of trackingFiles) {
+            if (trackingFile.content.description) {
+              description = trackingFile.content.description
+              break
+            }
+          }
+
+          projects.push({
+            ...dir,
+            type,
+            languages,
+            hasGit,
+            status,
+            description,
+            trackingFiles,
+            confidence: status.confidence,
+          })
+        }
+      } finally {
+        spinner.stop()
+      }
 
       // Handle no projects found
       if (projects.length === 0) {
