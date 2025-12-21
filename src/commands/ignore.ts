@@ -131,17 +131,18 @@ export default class Ignore extends Command {
             confidence: status.confidence,
           })
         }
-      } finally {
-        spinner.stop()
-      }
 
-      // Handle no projects found
-      if (projects.length === 0) {
-        this.log(chalk.yellow('⚠️  No projects found'))
-        return
-      }
+        // Handle no projects found
+        if (projects.length === 0) {
+          spinner.fail('No projects found')
+          return
+        }
 
-      this.log(chalk.green(`✓ Found ${projects.length} project${projects.length === 1 ? '' : 's'}`))
+        spinner.succeed(`Found ${projects.length} project${projects.length === 1 ? '' : 's'}`)
+      } catch (error) {
+        spinner.fail('Failed to scan projects')
+        throw error
+      }
 
       // Step 2: Load current ignore state
       const currentIgnoreState = loadCurrentIgnoreState(projects, config)
