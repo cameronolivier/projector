@@ -49,7 +49,14 @@ src/
 ├── index.ts              # oclif entry point
 ├── commands/             # CLI command implementations
 │   ├── list.ts          # Main project listing command (default)
-│   └── cache.ts         # Cache management commands
+│   ├── cache.ts         # Cache management commands
+│   ├── ignore.ts        # Interactive ignore pattern management
+│   ├── init.ts          # Configuration initialization wizard
+│   ├── config.ts        # Configuration viewer/editor
+│   ├── open.ts          # Open projects in editor
+│   ├── jump.ts          # Quick navigation to projects
+│   ├── shell.ts         # Shell integration
+│   └── template.ts      # Project template management
 └── lib/
     ├── types.ts         # Core TypeScript interfaces and enums
     ├── discovery/       # File system scanning and project detection
@@ -61,8 +68,10 @@ src/
     │   └── table.ts     # Colored table output with cli-table3
     ├── config/          # YAML configuration management
     │   └── config.ts    # XDG-compliant configuration system
-    └── cache/           # Performance caching system
-        └── manager.ts   # Directory modification-based caching
+    ├── cache/           # Performance caching system
+    │   └── manager.ts   # Directory modification-based caching
+    └── commands/        # Command utilities
+        └── ignore-utils.js  # Pattern generation and merging
 ```
 
 ### Key Data Flow
@@ -112,6 +121,13 @@ projector --clear-cache           # Clear cache before scanning
 projector cache                   # Show cache statistics
 projector cache --clear           # Clear all cached data
 projector cache --prune           # Remove old cache entries
+
+# Ignore pattern management
+projector ignore                  # Interactive ignore pattern manager
+projector ignore --dry-run        # Preview changes without saving
+projector ignore --directory ~/code  # Scan specific directory
+projector ignore --verbose        # Show detailed pattern generation
+projector ignore --clear-cache    # Clear cache before scanning
 ```
 
 ## Project Detection Strategy
@@ -132,6 +148,56 @@ projector cache --prune           # Remove old cache entries
 - Parallel processing with concurrency limits for performance
 - Symlink handling with cycle detection
 - Cache invalidation based on directory modification times
+
+## Ignore Pattern Management
+
+The `projector ignore` command provides an interactive interface for managing which projects to exclude from scans.
+
+### Interactive Workflow
+1. **Scan Phase**: Discovers all projects in the directory (ignoring current patterns temporarily)
+2. **Selection**: Checkbox interface to select/deselect projects to ignore
+3. **Pattern Generation**: Offers three modes:
+   - **Smart patterns**: Generates optimized patterns (e.g., `*-template`, `archived-*`)
+   - **Exact names**: Uses exact project names as patterns
+   - **Review mode**: Preview patterns before saving
+4. **Configuration**: Saves patterns to `~/.config/projector/config.yaml`
+
+### Pattern Generation Modes
+
+**Smart Mode (Recommended)**
+- Analyzes project names to find common prefixes/suffixes
+- Groups similar projects under single patterns
+- Example: Instead of ignoring `test-1`, `test-2`, `test-3` individually, creates `test-*`
+
+**Exact Mode**
+- Creates individual patterns for each project
+- More explicit but less efficient
+- Useful when projects don't share naming patterns
+
+### Exit Behavior
+- **Ctrl+C / ESC**: Exits with code 130 (`EEXIT: 130`)
+- User cancellation is handled gracefully
+- No changes are saved when cancelled
+
+### Command Flags
+- `--dry-run`: Preview changes without saving
+- `--verbose`: Show detailed pattern generation logic
+- `--directory <path>`: Scan specific directory
+- `--clear-cache`: Clear cache before scanning
+- `--no-cache`: Skip cache during scan
+
+### Pattern Storage
+Patterns are stored in `config.yaml` under:
+```yaml
+ignore:
+  patterns:
+    - "*-template"
+    - "archived-*"
+    - "test-project"
+  useIgnoreFiles: true
+  ignoreFileName: ".projectorignore"
+  directories: []
+```
 
 ## Status Analysis System
 
@@ -166,7 +232,10 @@ Extracts version information from:
 - `maxDepth`: Maximum recursion depth for directory traversal
 - `trackingPatterns`: Custom patterns for tracking file detection
 - `descriptions`: Manual project descriptions override
-- `ignorePatterns`: Additional directories to skip during scanning
+- `ignore.patterns`: Project ignore patterns (managed via `projector ignore` command)
+- `ignore.useIgnoreFiles`: Enable `.projectorignore` file support
+- `ignore.ignoreFileName`: Custom ignore file name (default: `.projectorignore`)
+- `ignore.directories`: Additional directories to ignore
 - `colorScheme`: Customizable colors for table output
 
 ## Performance & Caching

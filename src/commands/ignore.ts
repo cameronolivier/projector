@@ -85,8 +85,13 @@ export default class Ignore extends Command {
       }
 
       // Step 1: Scan projects
-      const spinner = new Spinner('🔍 Scanning projects...')
-      spinner.start()
+      const useSpinner = Boolean(
+        process.stdout.isTTY &&
+        process.stdin.isTTY &&
+        process.env.NODE_ENV !== 'test' &&
+        !flags.verbose
+      )
+      const spinner = useSpinner ? new Spinner('🔍 Scanning projects...') : null
 
       const scanDirectory = flags.directory || config.scanDirectory
       const maxDepth = flags.depth !== undefined ? flags.depth : config.maxDepth
@@ -98,6 +103,12 @@ export default class Ignore extends Command {
       let projects: AnalyzedProject[] = []
 
       try {
+        spinner?.start()
+
+        if (!useSpinner || flags.verbose) {
+          this.log('🔍 Scanning projects...')
+        }
+
         const discoveredDirs = await scanner.scanDirectory(scanDirectory, {
           maxDepth,
           ignorePatterns: [], // Don't apply ignore patterns - we want to see all projects
@@ -114,8 +125,7 @@ export default class Ignore extends Command {
           // Extract description from tracking files if available
           let description = config.descriptions?.[dir.name] || ''
           for (const trackingFile of trackingFiles) {
-            if (trackingFile.content.description) {
-              description = trackingFile.content.description
+            if (trackingFile.content.description) {              description = trackingFile.content.description
               break
             }
           }
@@ -132,15 +142,18 @@ export default class Ignore extends Command {
           })
         }
 
+        spinner?.stop()
+
         // Handle no projects found
         if (projects.length === 0) {
-          spinner.fail('No projects found')
+          this.log(chalk.yellow('⚠️  No projects found'))
           return
         }
 
-        spinner.succeed(`Found ${projects.length} project${projects.length === 1 ? '' : 's'}`)
+        this.log(chalk.green(`✓ Found ${projects.length} project${projects.length === 1 ? '' : 's'}`))
       } catch (error) {
-        spinner.fail('Failed to scan projects')
+        spinner?.stop()
+        this.error('Failed to scan projects')
         throw error
       }
 
