@@ -96,7 +96,15 @@ export default class Ignore extends Command {
       const scanDirectory = flags.directory || config.scanDirectory
       const maxDepth = flags.depth !== undefined ? flags.depth : config.maxDepth
 
-      const scanner = new ProjectScanner(config)
+      // Disable ignore file checking during scan - we want to see all projects
+      const scanConfig = {
+        ...config,
+        ignore: {
+          ...config.ignore,
+          useIgnoreFiles: false,
+        },
+      }
+      const scanner = new ProjectScanner(scanConfig)
       const detector = new TypeDetector()
       const analyzer = new TrackingAnalyzer(config.trackingPatterns)
 
