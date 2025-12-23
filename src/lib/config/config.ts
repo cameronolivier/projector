@@ -186,8 +186,6 @@ export class ConfigurationManager {
       },
       ignore: {
         patterns: [],
-        useIgnoreFiles: true,
-        ignoreFileName: '.projectorignore',
         directories: [],
       },
       gitInsights: this.getDefaultGitInsightsConfig(),
@@ -289,8 +287,6 @@ export class ConfigurationManager {
   private mergeIgnoreConfig(defaults: IgnoreConfig, legacyIgnorePatterns?: string[], overrides?: Partial<IgnoreConfig>): IgnoreConfig {
     const result: IgnoreConfig = {
       patterns: overrides?.patterns || defaults.patterns || [],
-      useIgnoreFiles: typeof overrides?.useIgnoreFiles === 'boolean' ? overrides.useIgnoreFiles : defaults.useIgnoreFiles,
-      ignoreFileName: overrides?.ignoreFileName || defaults.ignoreFileName,
       directories: overrides?.directories || defaults.directories || [],
     }
 

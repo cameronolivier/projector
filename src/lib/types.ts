@@ -153,11 +153,7 @@ export interface ProjectsConfig {
 export interface IgnoreConfig {
   // Glob patterns to match project paths or names
   patterns?: string[]
-  // Use .projectorignore files during scan
-  useIgnoreFiles?: boolean
-  // Name of ignore file (default: .projectorignore)
-  ignoreFileName?: string
-  // Legacy: directory basenames (for backward compat)
+  // Directory basenames to ignore
   directories?: string[]
 }
 

@@ -2,7 +2,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import { ProjectDirectory, ScanOptions, ProjectType, ProjectsConfig } from '../types.js'
 import { RootSignalScorer } from './root-scorer.js'
-import { IgnoreMatcher, type IgnoreContext } from './ignore-matcher.js'
+import { IgnoreMatcher } from './ignore-matcher.js'
 
 export class ProjectScanner {
   private config?: ProjectsConfig
@@ -44,8 +44,7 @@ export class ProjectScanner {
     projects: ProjectDirectory[],
     visitedPaths: Set<string>,
     projectRoots: Set<string>,
-    allowInsideRoots: boolean = false,
-    ignoreContext?: IgnoreContext
+    allowInsideRoots: boolean = false
   ): Promise<void> {
     // Check depth limit
     if (currentDepth >= maxDepth) {
@@ -57,17 +56,12 @@ export class ProjectScanner {
       return
     }
 
-    // NEW: Build ignore context and check against new rules
-    if (this.config?.ignore?.useIgnoreFiles) {
-      const context = await this.ignoreMatcher.buildContext(currentPath, ignoreContext)
+    // Check config-based ignore patterns
+    if (this.config?.ignore) {
       const basename = path.basename(currentPath)
-
-      if (this.ignoreMatcher.shouldIgnoreDirectory(currentPath, basename, context)) {
+      if (this.ignoreMatcher.shouldIgnoreDirectory(currentPath, basename)) {
         return
       }
-
-      // Pass context to recursive calls below
-      ignoreContext = context
     }
 
     // Skip if inside an already identified project root
@@ -141,8 +135,7 @@ export class ProjectScanner {
                 projects,
                 visitedPaths,
                 projectRoots,
-                true,
-                ignoreContext
+                true
               )
             }
           }
@@ -181,8 +174,7 @@ export class ProjectScanner {
               projects,
               visitedPaths,
               projectRoots,
-              false,
-              ignoreContext
+              false
             )
           )
         )

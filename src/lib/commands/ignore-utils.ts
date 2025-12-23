@@ -121,8 +121,6 @@ export function validatePattern(
 ): ValidationResult {
   const ignoreMatcher = new IgnoreMatcher({
     patterns: [pattern],
-    useIgnoreFiles: false,
-    ignoreFileName: '.projectorignore',
     directories: [],
   })
 
@@ -170,8 +168,6 @@ export function deduplicatePatterns(
   for (const pattern of patterns) {
     const ignoreMatcher = new IgnoreMatcher({
       patterns: [pattern],
-      useIgnoreFiles: false,
-      ignoreFileName: '.projectorignore',
       directories: [],
     })
 
@@ -315,8 +311,6 @@ export function mergeIgnorePatterns(
   const filteredCurrentPatterns = currentPatterns.filter((pattern) => {
     const ignoreMatcher = new IgnoreMatcher({
       patterns: [pattern],
-      useIgnoreFiles: false,
-      ignoreFileName: '.projectorignore',
       directories: [],
     })
 

@@ -272,8 +272,6 @@ describe('loadCurrentIgnoreState', () => {
     const config: ProjectsConfig = {
       ignore: {
         patterns: ['*-old'],
-        useIgnoreFiles: false,
-        ignoreFileName: '.projectorignore',
         directories: [],
       },
     } as any
@@ -291,8 +289,6 @@ describe('loadCurrentIgnoreState', () => {
     const config: ProjectsConfig = {
       ignore: {
         patterns: [],
-        useIgnoreFiles: false,
-        ignoreFileName: '.projectorignore',
         directories: [],
       },
     } as any
