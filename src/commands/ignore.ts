@@ -178,38 +178,21 @@ export default class Ignore extends Command {
         }
       })
 
-      // Check TTY status
-      this.log(`TTY status: stdin=${process.stdin.isTTY} stdout=${process.stdout.isTTY}`)
-
       if (flags.verbose) {
         this.log(`About to show ${choices.length} choices`)
         this.log(`First choice: ${choices[0]?.name}`)
       }
 
-      // Ensure we're in a TTY environment
-      if (!process.stdin.isTTY || !process.stdout.isTTY) {
-        this.error('Interactive mode requires a TTY environment. Try running directly in your terminal without pipes.')
-      }
-
-      let selectedPaths: string[] = []
-      try {
-        const result = await inquirer.prompt<{ selectedPaths: string[] }>([
-          {
-            type: 'checkbox',
-            name: 'selectedPaths',
-            message: `Select projects to ignore (${projects.length} found)`,
-            choices,
-            pageSize: 15,
-            loop: false,
-          },
-        ])
-        selectedPaths = result.selectedPaths
-      } catch (err) {
-        if (flags.verbose) {
-          this.log(`Prompt error: ${err}`)
-        }
-        throw err
-      }
+      const { selectedPaths } = await inquirer.prompt<{ selectedPaths: string[] }>([
+        {
+          type: 'checkbox',
+          name: 'selectedPaths',
+          message: `Select projects to ignore (${projects.length} found)`,
+          choices,
+          pageSize: 15,
+          loop: false,
+        },
+      ])
 
       // Step 4: Detect changes
       const selectedSet = new Set(selectedPaths)
