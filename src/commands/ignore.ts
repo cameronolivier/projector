@@ -166,7 +166,7 @@ export default class Ignore extends Command {
         this.log(chalk.gray(`  ${currentlyIgnoredProjects.length} currently ignored`))
       }
 
-      // Step 3: Show checkbox prompt
+      // Step 3: Show checkbox prompt (inverted: checked = keep, unchecked = ignore)
       const choices = projects.map((p) => {
         const isIgnored = currentIgnoreState.get(p.path) || false
         const icon = isIgnored ? '[IGNORED]' : ''
@@ -174,7 +174,7 @@ export default class Ignore extends Command {
         return {
           name: `${icon} ${p.name} (${p.type.toLowerCase()}) - ${p.status.type} - ${p.path}`.substring(0, 120),
           value: p.path,
-          checked: isIgnored,
+          checked: !isIgnored, // Inverted: checked = keep
         }
       })
 
@@ -187,19 +187,21 @@ export default class Ignore extends Command {
         {
           type: 'checkbox',
           name: 'selectedPaths',
-          message: `Select projects to ignore (${projects.length} found)`,
+          message: `Select projects to KEEP (uncheck to ignore) - ${projects.length} found`,
           choices,
           pageSize: 15,
           loop: false,
         },
       ])
 
-      // Step 4: Detect changes
+      // Step 4: Detect changes (inverted logic: unchecked = ignore)
       const selectedSet = new Set(selectedPaths)
       const currentlyIgnoredSet = new Set(currentlyIgnoredProjects.map((p) => p.path))
 
-      const projectsToIgnore = projects.filter((p) => selectedSet.has(p.path) && !currentlyIgnoredSet.has(p.path))
-      const projectsToUnignore = projects.filter((p) => !selectedSet.has(p.path) && currentlyIgnoredSet.has(p.path))
+      // Projects to ignore = unchecked items that aren't already ignored
+      const projectsToIgnore = projects.filter((p) => !selectedSet.has(p.path) && !currentlyIgnoredSet.has(p.path))
+      // Projects to unignore = checked items that are currently ignored
+      const projectsToUnignore = projects.filter((p) => selectedSet.has(p.path) && currentlyIgnoredSet.has(p.path))
 
       // No changes made
       if (projectsToIgnore.length === 0 && projectsToUnignore.length === 0) {
