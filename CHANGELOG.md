@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/cameronolivier/projector/compare/v1.0.1...v1.0.2) (2025-12-23)
+
+
+### Bug Fixes
+
+* **ignore:** add TTY detection and error handling ([b31b89d](https://github.com/cameronolivier/projector/commit/b31b89d4bca7e73cd5006829d67ccbf93849ffb1))
+
 ## [1.0.1](https://github.com/cameronolivier/projector/compare/v1.0.0...v1.0.1) (2025-12-23)
 
 
