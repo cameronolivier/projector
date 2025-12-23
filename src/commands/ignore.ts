@@ -168,12 +168,10 @@ export default class Ignore extends Command {
       // Step 3: Show checkbox prompt
       const choices = projects.map((p) => {
         const isIgnored = currentIgnoreState.get(p.path) || false
-        const icon = isIgnored ? '🚫' : '  '
-        const statusColor = this.getStatusColor(p.status.type)
-        const typeLabel = chalk.gray(`(${p.type.toLowerCase()})`)
+        const icon = isIgnored ? '[IGNORED]' : ''
 
         return {
-          name: `${icon} ${p.name} ${chalk.dim('—')} ${statusColor(p.status.type)} ${typeLabel} ${chalk.dim('—')} ${chalk.gray(p.path)}`,
+          name: `${icon} ${p.name} (${p.type.toLowerCase()}) - ${p.status.type} - ${p.path}`,
           value: p.path,
           checked: isIgnored,
         }
