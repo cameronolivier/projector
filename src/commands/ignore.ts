@@ -142,7 +142,7 @@ export default class Ignore extends Command {
           })
         }
 
-        spinner?.stop()
+        spinner?.succeed()
 
         // Handle no projects found
         if (projects.length === 0) {
@@ -150,10 +150,11 @@ export default class Ignore extends Command {
           return
         }
 
-        this.log(chalk.green(`✓ Found ${projects.length} project${projects.length === 1 ? '' : 's'}`))
+        if (flags.verbose) {
+          this.log(chalk.green(`✓ Found ${projects.length} project${projects.length === 1 ? '' : 's'}`))
+        }
       } catch (error) {
-        spinner?.stop()
-        this.error('Failed to scan projects')
+        spinner?.fail('Failed to scan projects')
         throw error
       }
 
@@ -171,19 +172,24 @@ export default class Ignore extends Command {
         const icon = isIgnored ? '[IGNORED]' : ''
 
         return {
-          name: `${icon} ${p.name} (${p.type.toLowerCase()}) - ${p.status.type} - ${p.path}`,
+          name: `${icon} ${p.name} (${p.type.toLowerCase()}) - ${p.status.type} - ${p.path}`.substring(0, 120),
           value: p.path,
           checked: isIgnored,
         }
       })
 
+      if (flags.verbose) {
+        this.log(`About to show ${choices.length} choices`)
+        this.log(`First choice: ${choices[0]?.name}`)
+      }
+
       const { selectedPaths } = await inquirer.prompt<{ selectedPaths: string[] }>([
         {
           type: 'checkbox',
           name: 'selectedPaths',
-          message: 'Select projects to ignore (Space to toggle, Enter to confirm)',
+          message: `Select projects to ignore (${projects.length} found)`,
           choices,
-          pageSize: 20,
+          pageSize: 15,
           loop: false,
         },
       ])
