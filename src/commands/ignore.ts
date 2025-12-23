@@ -178,15 +178,17 @@ export default class Ignore extends Command {
         }
       })
 
+      // Check TTY status
+      this.log(`TTY status: stdin=${process.stdin.isTTY} stdout=${process.stdout.isTTY}`)
+
       if (flags.verbose) {
         this.log(`About to show ${choices.length} choices`)
         this.log(`First choice: ${choices[0]?.name}`)
-        this.log(`TTY: stdin=${process.stdin.isTTY} stdout=${process.stdout.isTTY}`)
       }
 
       // Ensure we're in a TTY environment
       if (!process.stdin.isTTY || !process.stdout.isTTY) {
-        this.error('Interactive mode requires a TTY environment')
+        this.error('Interactive mode requires a TTY environment. Try running directly in your terminal without pipes.')
       }
 
       let selectedPaths: string[] = []
