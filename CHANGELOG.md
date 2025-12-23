@@ -1,3 +1,15 @@
+# [1.1.0](https://github.com/cameronolivier/projector/compare/v1.0.2...v1.1.0) (2025-12-23)
+
+
+### Bug Fixes
+
+* **ignore:** remove strict TTY check, let inquirer handle it ([e285af6](https://github.com/cameronolivier/projector/commit/e285af6c7ac537b6ba4e79165cda817a81dfc561))
+
+
+### Features
+
+* **ignore:** invert checkbox logic to select-to-keep ([89ddac4](https://github.com/cameronolivier/projector/commit/89ddac4e8ec0feaa38c7ef7291911f9606f7f09a))
+
 ## [1.0.2](https://github.com/cameronolivier/projector/compare/v1.0.1...v1.0.2) (2025-12-23)
 
 
