@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/cameronolivier/projector/compare/v1.0.0...v1.0.1) (2025-12-23)
+
+
+### Bug Fixes
+
+* **ignore:** disable useIgnoreFiles during scan to prevent hang ([fc629a7](https://github.com/cameronolivier/projector/commit/fc629a7648a3330b6dbdd3bf07d92abae0c03770))
+* **ignore:** simplify checkbox choice formatting ([0309770](https://github.com/cameronolivier/projector/commit/03097700f7d39759d22314e173b2dcec20745a28))
+
 # 1.0.0 (2025-12-23)
 
 
