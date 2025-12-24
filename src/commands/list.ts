@@ -7,8 +7,6 @@ import { ConfigurationManager } from '../lib/config/config.js'
 import { CacheManager } from '../lib/cache/manager.js'
 import { IgnoreMatcher } from '../lib/discovery/ignore-matcher.js'
 import inquirer from 'inquirer'
-import { defaultEditorFromEnv, supportedEditors, buildEditorCommand, isGuiEditor, type EditorId } from '../lib/commands/open-utils.js'
-import { spawn } from 'child_process'
 import { GitAnalyzer } from '../lib/git/analyzer.js'
 import type { CachedGitInsights, ProjectDirectory } from '../lib/types.js'
 import { deriveParentTag } from '../lib/tags/utils.js'
@@ -79,18 +77,15 @@ export default class List extends Command {
       options: ['text', 'json'],
       default: 'text',
     }),
-    interactive: Flags.boolean({
-      description: 'Force interactive action flow (table → select project → choose action)',
-      default: undefined,
-    }),
-    'no-interactive': Flags.boolean({
-      description: 'Disable interactive prompts even in a TTY',
-      default: false,
-    }),
     'git-insights': Flags.boolean({
       description: 'Enable git insight collection for this run (use --no-git-insights to disable)',
       allowNo: true,
       default: undefined,
+    }),
+    'sort-by': Flags.string({
+      description: 'Sort projects by: name, last-commit, type, status, git-activity',
+      options: ['name', 'last-commit', 'type', 'status', 'git-activity'],
+      default: 'name',
     }),
   }
 
@@ -308,9 +303,48 @@ export default class List extends Command {
       }
 
       spinner?.succeed('✅ Project data ready')
-      
-      // Sort projects by name
-      projects.sort((a, b) => a.name.localeCompare(b.name))
+
+      // Sort projects based on flag
+      const sortBy = flags['sort-by'] || 'name'
+      projects.sort((a, b) => {
+        switch (sortBy) {
+          case 'last-commit':
+            // Sort by most recent commit
+            const aTime = a.git?.head?.committedAt || 0
+            const bTime = b.git?.head?.committedAt || 0
+            return bTime - aTime
+
+          case 'type':
+            // Sort by project type, then name
+            if (a.type !== b.type) {
+              return a.type.localeCompare(b.type)
+            }
+            return a.name.localeCompare(b.name)
+
+          case 'status':
+            // Sort by status type, then name
+            const statusOrder = { stable: 1, active: 2, phase: 3, archived: 4, unknown: 5 }
+            const aOrder = statusOrder[a.status.type as keyof typeof statusOrder] || 999
+            const bOrder = statusOrder[b.status.type as keyof typeof statusOrder] || 999
+            if (aOrder !== bOrder) {
+              return aOrder - bOrder
+            }
+            return a.name.localeCompare(b.name)
+
+          case 'git-activity':
+            // Sort by git activity (commits in window), then name
+            const aCommits = a.git?.commitsInWindow.count || 0
+            const bCommits = b.git?.commitsInWindow.count || 0
+            if (aCommits !== bCommits) {
+              return bCommits - aCommits
+            }
+            return a.name.localeCompare(b.name)
+
+          case 'name':
+          default:
+            return a.name.localeCompare(b.name)
+        }
+      })
 
       // Generate table string
       const table = tableGenerator.generateTable(projects, {
@@ -391,93 +425,6 @@ export default class List extends Command {
           this.exit(130)
         }
       }
-
-      // New interactive action flow: table → pick project → choose action
-      const isTTY = Boolean(process.stdout.isTTY && process.stdin.isTTY)
-      const interactiveDefault = config.defaultInteractive ?? true
-      const interactiveFlag = typeof flags.interactive === 'boolean' ? Boolean(flags.interactive) : undefined
-      const interactiveEnabled = !flags['no-interactive'] && (interactiveFlag ?? (isTTY && interactiveDefault))
-
-      if (interactiveEnabled) {
-        if (!isTTY) {
-          // Safety: only run when TTY
-          return
-        }
-
-        try {
-          const choices = projects.map(p => ({
-            name: `${p.name} — ${p.status.type} (${p.type}) — ${p.path}`,
-            value: p.path,
-          }))
-          const { projectPath } = await inquirer.prompt<{ projectPath: string }>([
-            {
-              type: 'list',
-              name: 'projectPath',
-              message: 'Select a project',
-              choices,
-              pageSize: 15,
-            },
-          ])
-
-          const defaultEditor: EditorId = (config.defaultEditor as EditorId) || defaultEditorFromEnv(process.env)
-          const actions = [
-            { name: `Open in ${defaultEditor}`, value: 'open-default' },
-            { name: 'Open in…', value: 'open-choose' },
-            { name: 'Change directory', value: 'cd' },
-            { name: 'Print path', value: 'print' },
-          ]
-          const { action } = await inquirer.prompt<{ action: string }>([
-            {
-              type: 'list',
-              name: 'action',
-              message: 'Choose action',
-              choices: actions,
-            },
-          ])
-
-          if (action === 'print') {
-            this.log(projectPath)
-            return
-          }
-
-          if (action === 'cd') {
-            const sentinel = config.cdSentinel || '__PROJECTOR_CD__'
-            this.log(`${sentinel} ${projectPath}`)
-            this.exit(0)
-          }
-
-          let editorId: EditorId = defaultEditor
-          if (action === 'open-choose') {
-            const editors = supportedEditors()
-            const { editor } = await inquirer.prompt<{ editor: EditorId }>([
-              {
-                type: 'list',
-                name: 'editor',
-                message: 'Select editor',
-                choices: editors.map(e => ({ name: e, value: e })),
-              },
-            ])
-            editorId = editor
-          }
-
-          // Build and spawn editor command
-          const { cmd, args } = buildEditorCommand(editorId, projectPath, { wait: false, editorArgs: [] })
-          const child = spawn(cmd, args, {
-            stdio: 'inherit',
-            shell: process.platform === 'win32',
-            detached: isGuiEditor(editorId),
-          })
-          child.on('error', (err) => {
-            this.warn(`Failed to launch editor: ${err instanceof Error ? err.message : String(err)}`)
-          })
-          // Do not wait; return to shell
-          return
-        } catch (err) {
-          this.warn('Selection cancelled')
-          this.exit(130)
-        }
-      }
-      
     } catch (error) {
       this.error(`Failed to scan projects: ${error instanceof Error ? error.message : String(error)}`)
     }

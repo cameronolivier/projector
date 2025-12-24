@@ -14,35 +14,31 @@ interface TableOptions {
 export class TableGenerator {
   generateTable(projects: AnalyzedProject[], options: TableOptions = {}): string {
     const colorScheme = options.colorScheme
+
+    // Check if any projects have git insights to adjust column widths
+    const hasGitInsights = projects.some(p => p.git)
+
     const table = new Table({
       head: [
-        chalk.hex(colorScheme?.header || '#00d4ff').bold('📁 Project'),
+        chalk.hex(colorScheme?.header || '#00d4ff').bold('Project'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Status'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Category'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Git'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Type'),
-        chalk.hex(colorScheme?.header || '#00d4ff').bold('📍 Location'),
+        chalk.hex(colorScheme?.header || '#00d4ff').bold('Location'),
         chalk.hex(colorScheme?.header || '#00d4ff').bold('Description')
       ],
       style: {
         head: [],
-        border: ['gray']
+        border: ['dim']
       },
-      colWidths: [24, 15, 18, 28, 12, 32, 45],
+      // Improved column widths: more space for description, less for redundant columns
+      colWidths: [20, 14, 14, hasGitInsights ? 26 : 8, 10, 28, 60],
       wordWrap: true
     })
 
-    // Sort projects: tracked first, then by name
-    const sortedProjects = [...projects].sort((a, b) => {
-      // Prioritize projects with tracking
-      if (a.status.type !== 'unknown' && b.status.type === 'unknown') return -1
-      if (a.status.type === 'unknown' && b.status.type !== 'unknown') return 1
-      
-      // Then sort alphabetically
-      return a.name.localeCompare(b.name)
-    })
-
-    for (const project of sortedProjects) {
+    // Display projects in the order provided (sorting handled by caller)
+    for (const project of projects) {
       const row = this.formatRow(project, options)
       table.push(row)
     }
