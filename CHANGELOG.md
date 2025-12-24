@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/cameronolivier/projector/compare/v1.1.0...v1.2.0) (2025-12-24)
+
+
+### Bug Fixes
+
+* downgrade inquirer to v8 for CommonJS compatibility ([0bac481](https://github.com/cameronolivier/projector/commit/0bac481b4dc894812d57a83e8300eded187f7e20))
+
+
+### Features
+
+* remove secondary interactive flow and add sorting options ([31b0a34](https://github.com/cameronolivier/projector/commit/31b0a3456a7fd5001726bd6daee7ee444272c964))
+
 # [1.1.0](https://github.com/cameronolivier/projector/compare/v1.0.2...v1.1.0) (2025-12-23)
 
 

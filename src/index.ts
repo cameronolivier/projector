@@ -3,7 +3,7 @@
 import { run } from '@oclif/core'
 
 // Read version from package.json
-const VERSION = '1.1.0'
+const VERSION = '1.2.0'
 
 async function main() {
   try {

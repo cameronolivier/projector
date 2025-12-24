@@ -1,6 +1,6 @@
 {
   "name": "projector",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Smart CLI tool for discovering and managing development projects with intelligent status tracking, recursive scanning, and beautiful table output. Automatically detects project types (Node.js, Python, Rust, Go, PHP, Java) and analyzes project status from tracking files.",
   "main": "dist/index.js",
   "bin": {
